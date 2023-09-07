@@ -1,0 +1,28 @@
+var x = 1;
+var y = 2*2;
+
+func some_func(x, y, z)
+{
+    var sum = x + y + z;
+    return x + y + z + arctg(sum) + sqrt(y);
+}
+
+func main()
+{
+    if(some_func(10, 20, 30) < 100)
+    {
+        printf("Some_string1");
+    }
+
+    elif(y > 0)
+    {
+        printf("Some_string2");
+    }
+
+    else
+    {
+        printf("Some_string3");
+    }
+
+    return arcsin(0.5);
+}
