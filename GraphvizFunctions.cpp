@@ -26,7 +26,14 @@
             else if(type == _STRING) fprintf(dotfile, " | value = \\\"%s\\\"}", root->val.name);                \
             else fprintf(dotfile, " | value = %s}", root->val.name);                                            \
         }                                                                                                       \
-        fprintf(dotfile,  " | {<f2>%p | <f3> %p}}\"];\n", root->left_child, root->right_child);                 \
+        if(root->left_child == nullptr && root->right_child == nullptr)                                         \
+        {                                                                                                       \
+            fprintf(dotfile,  "}\"];\n");                                                                      \
+        }                                                                                                       \
+        else                                                                                                    \
+        {                                                                                                       \
+            fprintf(dotfile,  " | {<f2>%p | <f3> %p}}\"];\n", root->left_child, root->right_child);             \
+        }                                                                                                       \
         
 
 #define PRINT_CHILD                                                                                 \

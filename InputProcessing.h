@@ -9,9 +9,12 @@
 #include <sys/stat.h>   
 #include <string.h>
 
-const int MAX_WORD_LENGTH  = 32;
-const float POISON         = (float)0xDEADDED;
-const int MAX_KNOWN_TOKENS = 42;
+const int MAX_WORD_LENGTH    = 32;
+const float POISON           = (float)0xDEADDED;
+const int MAX_KNOWN_TOKENS   = 42;
+const int MAX_FUNC_ARGS      = 5;
+const int MAX_FUNC_VARS      = 20;
+const int MAX_FUNC_GLOB_VARS = 10;
 
 //================================================================================================
 
@@ -55,14 +58,26 @@ struct TokenInfo
     int error   = 0;
 };
 
-struct TextInfo
+struct FunctionInfo
 {
-    char* chars_buff_ptr = nullptr;
-    FILE* mainfile       = nullptr;
-    FILE* lst_file       = nullptr;
-    TokenInfo* tok_arr   = nullptr;
-    
-    char signature[5] = "Ver1";
+    char name[MAX_WORD_LENGTH]                          = {0};
+    size_t token_num                                    = 0;  
+    size_t args_num                                     = 0;  
+    size_t vars_num                                     = 0;  
+    size_t glob_vars_num                                = 0;
+    char args_arr[MAX_FUNC_ARGS][MAX_WORD_LENGTH]       = {0};
+    char decl_vars[MAX_FUNC_VARS][MAX_WORD_LENGTH]      = {0};
+    char glob_vars[MAX_FUNC_GLOB_VARS][MAX_WORD_LENGTH] = {0}; 
+};
+
+struct InputInfo
+{
+    char* chars_buff_ptr  = nullptr;
+    FILE* mainfile        = nullptr;
+    FILE* lst_file        = nullptr;
+    TokenInfo* tok_arr    = nullptr;
+    FunctionInfo* fnc_arr = nullptr;
+    char signature[5]     = "Ver1";
 
     size_t ch_num  = 0;
     size_t tok_num = 0;    
@@ -70,65 +85,68 @@ struct TextInfo
     int error = 0;                             
 };
 
-struct KnownTokenInfo
-{
-    char text[MAX_WORD_LENGTH] = {0};
-    TypeOfToken type;
-};
-
 enum InputProcessingErrors
 {
-    ERROR_MAIN_FILE_OPEN   = 1,
-    ERROR_CHARS_BUFFER     = 2,
-    ERROR_COUNT_TOKENS     = 3,
-    ERROR_VAR_INIT         = 4,
-    ERROR_FNC_DECL         = 5,
-    ERROR_COND_OP          = 6, 
-    ERROR_LOOP             = 7,
-    ERROR_VAR_NAME         = 8,
-    ERROR_MAIN             = 9,
-    ERROR_FNC_NAME         = 10,
-    ERROR_RETURN           = 11, 
-    ERROR_END_OF_PROG      = 12,
-    ERROR_NO_MAIN          = 13, 
-    ERROR_DOUBLE_MAIN      = 14,
-    ERROR_NO_PREV_FNC_DECL = 15,
-    ERROR_END_OF_THE_FILE  = 16,
-    ERROR_BAD_FIRST_TOK    = 17,
+    ERROR_MAINFILE_OPEN      = 1,
+    ERROR_CHARS_BUFFER       = 2,
+    ERROR_TOKS_ARR_CALLOC    = 3,
+    ERROR_IN_VAR_INIT_CONSTR = 4,
+    ERROR_IN_FNC_DECL_CONSTR = 5,
+    ERROR_IN_COND_OP_CONSTR  = 6, 
+    ERROR_IN_LOOP_CONSTR     = 7,
+    ERROR_IN_VAR_NAME_CONSTR = 8,
+    ERROR_IN_FNC_NAME_CONSTR = 9,
+    ERROR_IN_RETURN_CONSTR   = 10,
+    ERROR_FILE_STRUCTURE     = 11,
+    ERROR_BRACKET_STRUCTURE  = 12,
+    ERROR_QUOTE_STRUCTURE    = 13,
+    ERROR_INVALID_VAR_DECL   = 14,
+    ERROR_CONFLICT_VAR_DECL  = 15,
+    ERROR_FUNC_OVERLOAD      = 16,
 };
 
 //================================================================================================
 
-void text_info_ctor(struct TextInfo* TextInfo, const char* filename);
+void text_info_ctor(struct InputInfo* InputInfo, const char* filename);
 
 //================================================================================================
 
-void open_file(struct TextInfo* TextInfo, const char* filename);
+void open_file(struct InputInfo* InputInfo, const char* filename);
 
 //================================================================================================
 
-void num_of_chars(struct TextInfo* TextInfo, const char* filename);
+void num_of_chars(struct InputInfo* InputInfo, const char* filename);
 
 //================================================================================================
 
-void chars_buffer(struct TextInfo* TextInfo);
+void chars_buffer(struct InputInfo* InputInfo);
 
 //================================================================================================
 
-void count_tokens(struct TextInfo* TextInfo);
+void count_tokens(struct InputInfo* InputInfo);
 
 //================================================================================================
 
-void tokenization(struct TextInfo* TextInfo);
+void tokenization(struct InputInfo* InputInfo);
 
 //================================================================================================
 
-void syntactic_analysis(struct TextInfo* TextInfo);
+void syntactic_analysis(struct InputInfo* InputInfo);
 
 //================================================================================================
 
-void listing(struct TextInfo* TextInfo);
+void prog_scope_check(struct InputInfo* InputInfo);
 
 //================================================================================================
+
+void listing(struct InputInfo* InputInfo);
+
+//================================================================================================
+
+void fill_fnc_vars(struct InputInfo* InputInfo, size_t fnc_num, size_t crl_brc_tok);
+
+//================================================================================================
+
+void prog_dtor(struct InputInfo* InputInfo);
 
 #endif // INPUT_PROCESSING_H

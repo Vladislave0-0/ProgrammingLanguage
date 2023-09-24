@@ -1,17 +1,30 @@
 var x = 1;
 var y = 2*2;
+var w = 1;
+var ww = 2*2;
 
-func some_func(x, y, z)
+func some_func1(a, b, c)
 {
-    var sum = x + y + z;
-    return x + y + z + arctg(sum) + sqrt(y);
+    var sum = a + b + c;
+    var o = 0;
+    return a + b + c + arctg(sum) + sqrt(b);
+}
+
+func some_func2()
+{
+    var sumlsum = a + b + c;
+    var ooo = 0;
+    var hjk = 0;
+    return a + b + c + arctg(sum) + sqrt(b);
 }
 
 func main()
 {
+    var zzzz = 0;
     if(some_func(10, 20, 30) < 100)
     {
         printf("Some_string1");
+        printf(x+1+arctg(x));
     }
 
     elif(y > 0)
@@ -19,10 +32,6 @@ func main()
         printf("Some_string2");
     }
 
-    else
-    {
-        printf("Some_string3");
-    }
 
     return arcsin(0.5);
 }

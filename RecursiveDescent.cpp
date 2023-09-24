@@ -126,18 +126,15 @@ Node* getFnc_name(struct Tree* tree)
         if(TYPE == QUOTE)
         {
             TOK++;
+            if(TYPE == STRING)
+            {
+                node->right_child = CREATE_STRING(TEXT);
+                TOK += 2;
+            }
+            return node;
         }
 
-        if(TYPE == NUMBER)
-        {
-            node->right_child = getNum(tree);
-        }
-
-        else if(TYPE == STRING)
-        {
-            node->right_child = CREATE_STRING(TEXT);
-            TOK += 2;
-        }
+        node->right_child = getExp(tree);
     }
 
     else if(!strcmp(TEXT, "scanf"))

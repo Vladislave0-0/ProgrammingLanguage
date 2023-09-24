@@ -2,12 +2,12 @@
 
 //==================================================================================================================
 
-Tree* tree_ctor(struct TextInfo* TextInfo)
+Tree* tree_ctor(struct InputInfo* InputInfo)
 {
     Tree* tree = (Tree*)calloc(1, sizeof(Tree));
 
-    tree->tok_arr = TextInfo->tok_arr;
-    tree->tok_num = TextInfo->tok_num;
+    tree->tok_arr = InputInfo->tok_arr;
+    tree->tok_num = InputInfo->tok_num;
 
     return tree;
 }
@@ -43,8 +43,6 @@ void init_tree_dtor(struct Tree* tree)
 
     free(tree);
     tree = nullptr;
-
-    printf(GRN "\nThe program was executed successfully!\n\n" RESET);
 }
 
 //==================================================================================================================
