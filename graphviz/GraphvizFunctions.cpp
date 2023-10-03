@@ -1,5 +1,5 @@
 #include "./GraphvizFunctions.h" 
-#include "colors.h"
+#include "../include/colors.h"
 
 //=====================================================================================================================
 
@@ -51,7 +51,9 @@
 
 void make_graph(Node* root, const char* filename) 
 {
-    FILE* dotfile = fopen(filename, "w");
+    char path[50] = "./output/";
+    strcat(path, filename);
+    FILE* dotfile = fopen(path, "w");
 
     // if(dotfile == nullptr)
     // {
@@ -73,14 +75,15 @@ void make_graph(Node* root, const char* filename)
 
     char dot_command[70] = "dot ";
     char new_file_ext[30] = {};
-    strcat(dot_command, filename);
+    strcat(dot_command, path);
     strcat(dot_command, " -Tpng -o ");
+    strcat(dot_command, "./output/");
     for(size_t i = 0; i < strlen(filename) - 3; i++)
     {
         new_file_ext[i] = filename[i];
     }
     strcat(new_file_ext, "png");
-    strcat(dot_command, new_file_ext);                
+    strcat(dot_command, new_file_ext);            
 
     system(dot_command);
 }

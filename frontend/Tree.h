@@ -6,8 +6,8 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include "InputProcessing.h"
-#include "colors.h"
+#include "../frontend/InputProcessing.h"
+#include "../include/colors.h"
 
 //==================================================================================================================
 

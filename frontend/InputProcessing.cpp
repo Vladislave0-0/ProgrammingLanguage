@@ -1,23 +1,36 @@
-#include "InputProcessing.h"
+#include "./InputProcessing.h"
 #include <string.h>
 #include <ctype.h>
-#include "colors.h"
+#include "../include/colors.h"
 
 //=========================================================================================
 
-void text_info_ctor(struct InputInfo* InputInfo, const char* filename)
+#define CHECK_ERROR                     \
+        if(InputInfo->error != 0)       \
+        {                               \
+            return InputInfo->error;    \
+        }                               \
+
+//=========================================================================================
+
+int text_info_ctor(struct InputInfo* InputInfo, const char* filename)
 {
     open_file(InputInfo, filename);
+    CHECK_ERROR;
     num_of_chars(InputInfo, filename);
     chars_buffer(InputInfo);
 
     count_tokens(InputInfo);
     tokenization(InputInfo);
     syntactic_analysis(InputInfo);
-    InputInfo->lst_file = fopen("source.lst", "w");
+    open_lst_file(InputInfo, filename);
     prog_scope_check(InputInfo);
     listing(InputInfo);
+
+    return SUCCESS;
 }
+
+#undef CHECK_ERROR
 
 //=========================================================================================
 
@@ -27,12 +40,41 @@ void open_file(struct InputInfo* InputInfo, const char* filename)
 
     if(file_input == nullptr)
     {
-        printf("IN ASM. There is no file named \"%s\".\n", filename);
+        printf(RED "\nThere is no file named \"%s\" in the current directory!\n\n" RESET, filename);
         InputInfo->error = ERROR_MAINFILE_OPEN;
         return;
     }
 
+    size_t filename_len = strlen(filename);
+
+    if(filename[filename_len-1] != 't' || filename[filename_len-2] != 'x' ||
+       filename[filename_len-3] != 't' || filename[filename_len-4] != '.')
+       {
+        printf(RED "\nInvalid input file format. Only the \"txt\" format is allowed!\n\n" RESET);
+        InputInfo->error = ERROR_MAINFILE_OPEN;
+        return;
+       }
+
     InputInfo->mainfile = file_input;
+}
+
+//=========================================================================================
+
+void open_lst_file(struct InputInfo* InputInfo, const char* filename)
+{
+    char path[100] = {};
+    strcat(path, "./output/");
+
+    char new_filename[50] = {};
+    size_t filename_len = strlen(filename);
+    for(size_t i = 0, j = 0; i < filename_len - 3; i++)
+    {
+        new_filename[j++] = filename[i];
+    }
+    strcat(path, new_filename);
+    strcat(path, "lst");
+    
+    InputInfo->lst_file = fopen(path, "w");
 }
 
 //=========================================================================================

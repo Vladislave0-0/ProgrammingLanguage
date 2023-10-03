@@ -87,31 +87,37 @@ struct InputInfo
 
 enum InputProcessingErrors
 {
-    ERROR_MAINFILE_OPEN      = 1,
-    ERROR_CHARS_BUFFER       = 2,
-    ERROR_TOKS_ARR_CALLOC    = 3,
-    ERROR_IN_VAR_INIT_CONSTR = 4,
-    ERROR_IN_FNC_DECL_CONSTR = 5,
-    ERROR_IN_COND_OP_CONSTR  = 6, 
-    ERROR_IN_LOOP_CONSTR     = 7,
-    ERROR_IN_VAR_NAME_CONSTR = 8,
-    ERROR_IN_FNC_NAME_CONSTR = 9,
-    ERROR_IN_RETURN_CONSTR   = 10,
-    ERROR_FILE_STRUCTURE     = 11,
-    ERROR_BRACKET_STRUCTURE  = 12,
-    ERROR_QUOTE_STRUCTURE    = 13,
-    ERROR_INVALID_VAR_DECL   = 14,
-    ERROR_CONFLICT_VAR_DECL  = 15,
-    ERROR_FUNC_OVERLOAD      = 16,
+    SUCCESS                  = 0,
+    ERROR_CMD_LINE_ARGS      = 1,
+    ERROR_MAINFILE_OPEN      = 2,
+    ERROR_CHARS_BUFFER       = 3,
+    ERROR_TOKS_ARR_CALLOC    = 4,
+    ERROR_IN_VAR_INIT_CONSTR = 5,
+    ERROR_IN_FNC_DECL_CONSTR = 6,
+    ERROR_IN_COND_OP_CONSTR  = 7, 
+    ERROR_IN_LOOP_CONSTR     = 8,
+    ERROR_IN_VAR_NAME_CONSTR = 9,
+    ERROR_IN_FNC_NAME_CONSTR = 10,
+    ERROR_IN_RETURN_CONSTR   = 11,
+    ERROR_FILE_STRUCTURE     = 12,
+    ERROR_BRACKET_STRUCTURE  = 13,
+    ERROR_QUOTE_STRUCTURE    = 14,
+    ERROR_INVALID_VAR_DECL   = 15,
+    ERROR_CONFLICT_VAR_DECL  = 16,
+    ERROR_FUNC_OVERLOAD      = 17,
 };
 
 //================================================================================================
 
-void text_info_ctor(struct InputInfo* InputInfo, const char* filename);
+int text_info_ctor(struct InputInfo* InputInfo, const char* filename);
 
 //================================================================================================
 
 void open_file(struct InputInfo* InputInfo, const char* filename);
+
+//================================================================================================
+
+void open_lst_file(struct InputInfo* InputInfo, const char* filename);
 
 //================================================================================================
 
