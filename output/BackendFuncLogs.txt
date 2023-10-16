@@ -1,0 +1,35 @@
+main
+	ARGS
+
+	DECL_VARS
+		0. y
+
+	ALL_VARS
+		0. y
+
+
+
+sum
+	ARGS
+		0. v
+		1. z
+
+	DECL_VARS
+
+	ALL_VARS
+		0. v
+		1. z
+
+
+
+some_fnc
+	ARGS
+		0. x
+
+	DECL_VARS
+
+	ALL_VARS
+		0. x
+
+
+

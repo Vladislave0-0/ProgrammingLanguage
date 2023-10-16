@@ -81,6 +81,7 @@ struct InputInfo
 
     size_t ch_num  = 0;
     size_t tok_num = 0;    
+    size_t fnc_num = 0;
 
     int error = 0;                             
 };
@@ -105,6 +106,8 @@ enum InputProcessingErrors
     ERROR_INVALID_VAR_DECL   = 15,
     ERROR_CONFLICT_VAR_DECL  = 16,
     ERROR_FUNC_OVERLOAD      = 17,
+    ERROR_UNDEF_REF_TO_MAIN  = 18,
+    ERROR_SCANF_UNKNOWN_ARG  = 19,
 };
 
 //================================================================================================

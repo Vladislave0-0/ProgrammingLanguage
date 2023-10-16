@@ -23,8 +23,8 @@ int text_info_ctor(struct InputInfo* InputInfo, const char* filename)
     count_tokens(InputInfo);
     tokenization(InputInfo);
     syntactic_analysis(InputInfo);
-    open_lst_file(InputInfo, filename);
     prog_scope_check(InputInfo);
+    open_lst_file(InputInfo, filename);
     listing(InputInfo);
 
     return SUCCESS;
@@ -306,8 +306,7 @@ void tokenization(struct InputInfo* InputInfo)
                     }
                 }
                 // тут различаем унарный минус от отрицательного числа
-                if(tmp_buff[cur_ch] == '-' && isdigit(tmp_buff[cur_ch + 1]) && 
-                  ((cur_ch != 0 && !isdigit(tmp_buff[cur_ch - 1])) || cur_ch == 0))
+                if(tmp_buff[cur_ch] == '-' && !isdigit(tmp_buff[cur_ch - 1]) && !isalpha(tmp_buff[cur_ch - 1]))
                 {
                     InputInfo->tok_arr[cur_tok].number = (float)atof(tmp_buff + cur_ch);
                     snprintf(InputInfo->tok_arr[cur_tok].text, sizeof(InputInfo->tok_arr[cur_tok].text), "%g", InputInfo->tok_arr[cur_tok].number);
@@ -405,6 +404,21 @@ void tokenization(struct InputInfo* InputInfo)
     }
 
     free(tmp_buff);
+
+    int main_cnt = 0;
+    for(size_t i = 0; i < InputInfo->tok_num; i++)
+    {
+        if(InputInfo->tok_arr[i].type == MAIN)
+        {
+            main_cnt++;
+            break;
+        }
+    }
+    if(main_cnt == 0)
+    {
+        InputInfo->error = ERROR_UNDEF_REF_TO_MAIN;
+    }
+
 
     // printf("\n\nInputInfo->tok_arr:\n\n");
     // for(size_t i = 0; i < InputInfo->tok_num; i++)
@@ -567,7 +581,6 @@ void syntactic_analysis(struct InputInfo* InputInfo)
             {
                 CHECK_TOK(ASSIGN, ERROR_IN_VAR_NAME_CONSTR);
                 cur_tok++;
-                printf("%s\n", TEXT);
                 while(R_VAL)
                 {
                     cur_tok++;
@@ -916,6 +929,7 @@ void prog_scope_check(struct InputInfo* InputInfo)
         }
     }
 
+    InputInfo->fnc_num = fnc_decl_num;
     InputInfo->fnc_arr = (FunctionInfo*)calloc(fnc_decl_num, sizeof(FunctionInfo));
 
     for(size_t cur_tok = 0, cur_fnc = 1; cur_tok < InputInfo->tok_num; cur_tok++)
@@ -926,6 +940,11 @@ void prog_scope_check(struct InputInfo* InputInfo)
 
             if(TYPE != MAIN)
             {
+                if(InputInfo->fnc_num == 1)
+                {
+                    cur_fnc--;
+                }
+                
                 strcpy(FNC_ARR[cur_fnc].name, TEXT);
                 FNC_ARR[cur_fnc].token_num = cur_tok;
                 cur_tok += 2;
@@ -1005,6 +1024,31 @@ void prog_scope_check(struct InputInfo* InputInfo)
 
         free(some_arr);
     }
+
+    // int scanf_arg_flag = 0;
+    // проверки корректности scanf
+    // for(size_t cur_tok = 0; cur_tok < InputInfo->tok_num; cur_tok++)
+    // {
+    //     if(!strcmp(TEXT, "scanf"))
+    //     {
+    //         size_t scanf_tok = cur_tok;
+    //         cur_tok += 2;
+    //         for(size_t j = 0; j < InputInfo->fnc_arr[0].glob_vars_num; j++)
+    //         {
+    //             if(!strcmp(TEXT, InputInfo->fnc_arr[0].glob_vars[j]))
+    //             {
+    //                 scanf_arg_flag = 1;
+    //             }
+    //         }
+
+    //         if(scanf_arg_flag == 0)
+    //         {
+    //             InputInfo->tok_arr[scanf_tok].error = ERROR_SCANF_UNKNOWN_ARG;
+    //         }
+
+    //         scanf_arg_flag = 0;
+    //     }
+    // }
 
     // редекларация функций
     int fnc_conflict_flag = 0;
@@ -1099,7 +1143,6 @@ void prog_scope_check(struct InputInfo* InputInfo)
 
     free(glob_vars_toks);
     free(glob_vars_arr);
-    free(InputInfo->fnc_arr);
 }
 
 //=========================================================================================
@@ -1191,6 +1234,7 @@ void fill_fnc_vars(struct InputInfo* InputInfo, size_t fnc_num, size_t crl_brc_t
 
 void prog_dtor(struct InputInfo* InputInfo)
 {
+    // printf("HUI\n");
     int errors_num = 0;
     for(size_t i = 0; i < InputInfo->tok_num; i++)
     {
@@ -1200,6 +1244,11 @@ void prog_dtor(struct InputInfo* InputInfo)
         }
     }
 
+    if(errors_num == SUCCESS && InputInfo->error != SUCCESS)
+    {
+        errors_num++;
+    }
+    
     free(InputInfo->tok_arr);
     free(InputInfo->chars_buff_ptr);
 
@@ -1211,5 +1260,4 @@ void prog_dtor(struct InputInfo* InputInfo)
     {
         printf(RED "\nThe program was executed with %d errors!\n\n" RESET, errors_num);
     }
-    
 }

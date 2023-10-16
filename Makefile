@@ -9,7 +9,7 @@ TARGET = lang
 CC = g++
 
 all:
-	@$(CC) $(CFLAGS) main.cpp ./frontend/InputProcessing.cpp ./frontend/Tree.cpp ./frontend/RecursiveDescent.cpp ./graphviz/GraphvizFunctions.cpp -o $(TARGET)
+	@$(CC) $(CFLAGS) main.cpp ./frontend/InputProcessing.cpp ./frontend/Tree.cpp ./frontend/RecursiveDescent.cpp ./graphviz/GraphvizFunctions.cpp ./backend/backend.cpp -o $(TARGET)
     
 clean:
 	rm $(TARGET)

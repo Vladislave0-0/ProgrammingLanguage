@@ -11,6 +11,10 @@ Node* make_tree(struct Tree* tree)
         printf("in make_tree root nullptr\n");
     }
 
+    parents_copy(root);
+    tree_simplification(root);
+    parents_copy(root);
+
     return root;
 }
 
@@ -43,20 +47,24 @@ Node* getProg(struct Tree* tree)
         {
             TOK++;
         }
-        right_child = getProg(tree);
+        if(TYPE != CRL_BRC && TYPE != SEMICLN)
+        {
+            right_child = getProg(tree);
+        }
+
         node = CREATE_EMPTY(left_child, right_child);
     }
 
     else if(TYPE == FNC_DECL)
     {
-        left_child  = getFnc_decl(tree);  
+        left_child = getFnc_decl(tree);  
+
         if(TOK < tree->tok_num - 1)
         {
             TOK++;
         }
 
         right_child = getProg(tree);
-        
         node = CREATE_EMPTY(left_child, right_child);
     }
     
@@ -74,10 +82,11 @@ Node* getProg(struct Tree* tree)
     else if(TYPE == COND_OP)
     {
         left_child  = getIf(tree);
-        if(TYPE != CRL_BRC && TYPE != VAR_DECL && TYPE != RETURN && TOK < tree->tok_num - 1)
+        if(TYPE != CRL_BRC && TYPE != VAR_DECL && TYPE != RETURN && TOK < tree->tok_num - 1 && TYPE != COND_OP)
         {
             TOK++;
         }
+        // printf("%s\n", TEXT);
         right_child = getProg(tree);
         node = CREATE_EMPTY(left_child, right_child);
     }
@@ -142,6 +151,14 @@ Node* getFnc_name(struct Tree* tree)
         node = CREATE_FNC_NAME(nullptr, TEXT);
         TOK += 2;
         node->right_child = getWord(tree);
+    }
+
+    else
+    {
+        node = CREATE_FNC_NAME(nullptr, TEXT);
+        TOK += 2;
+        node->right_child = getFnc_params(tree);
+        // printf("HUI!\n");
     }
 
     return node;
@@ -229,7 +246,16 @@ Node* getFnc_decl(struct Tree* tree)
         node->left_child = CREATE_FNC_NAME(nullptr, TEXT);
         TOK += 4;
 
-        node->left_child->right_child = getProg(tree);
+        if(TYPE == VAR_DECL || TYPE == LOOP || TYPE == COND_OP || 
+           TYPE == RETURN   || TYPE == VAR_NAME)
+        {
+            node->right_child = getProg(tree);
+        }
+
+        else
+        {
+            printf(RED "\n\nUNKNOWN TYPE IN getFnc_decl\n\n" RESET);
+        }
     }
 
     else if(TYPE == FNC_NAME)

@@ -12,7 +12,7 @@
 #define CREATE_ARTH_OP(left_child, right_child, name)         create_node(left_child, right_child, _ARTH_OP, name, 0)       //
 #define CREATE_LOG_OP(log_name)                               create_node(nullptr, nullptr, _LOG_OP, log_name, 0)           //
 #define CREATE_LOOP                                           create_node(nullptr, nullptr, _LOOP, nullptr, 0)              //
-#define CREATE_NUM(value)                                     create_node(nullptr, nullptr, _NUM, nullptr, value)           //
+#define CREATE_NUM(value)                                     create_node(nullptr, nullptr, _NUMBER, nullptr, value)        //
 #define CREATE_VAR_NAME(var_name)                             create_node(nullptr, nullptr, _VAR_NAME, var_name, 0)         //
 #define CREATE_FNC_NAME(right_child, fnc_name)                create_node(nullptr, right_child, _FNC_NAME, fnc_name, 0)     //
 #define CREATE_FNC_PARAMS                                     create_node(nullptr, nullptr, _PARAM, nullptr, 0)             //

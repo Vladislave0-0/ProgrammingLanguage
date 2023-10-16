@@ -1,37 +1,42 @@
-var x = 1;
-var y = 2*2;
-var w = 1;
-var ww = 2*2;
-
-func some_func1(a, b, c)
+func sum(v, z)
 {
-    var sum = a + b + c;
-    var o = 0;
-    return a + b + c + arctg(sum) + sqrt(b);
+    return v + z; 
 }
 
-func some_func2()
+func some_fnc(x)
 {
-    var sumlsum = a + b + c;
-    var ooo = 0;
-    var hjk = 0;
-    return a + b + c + arctg(sum) + sqrt(b);
+    while(x < 5)
+    {
+        printf("Hello_world!");
+        x = x + 1;
+    }
+
+    return 0;
 }
 
 func main()
 {
-    var zzzz = 0;
-    if(some_func(10, 20, 30) < 100)
+    var y = 1;
+    while(y < 5)
     {
-        printf("Some_string1");
-        printf(x+1+arctg(x));
+        printf("Hello_world!");
+        y = y + 1;
     }
 
-    elif(y > 0)
+    sum(1, 2);
+    some_fnc(-5);
+    if(y == 1)
     {
-        printf("Some_string2");
+        printf(123);
     }
-
-
-    return arcsin(0.5);
+    elif(y > 1)
+    {
+        printf(456);
+    }
+    else
+    {
+        printf(789);
+    }
+    
+    return 0;
 }

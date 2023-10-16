@@ -6,7 +6,7 @@
 #define PRINT_NODE(color, type, type_text)                                                                      \
         fprintf(dotfile, "\tnode_%p [style = \"filled\", fillcolor = %s, shape = Mrecord, label = "             \
                          "\"{{<f1> %p} | {type: %s", root, color, root, type_text);                             \
-        if(type == _NUM)                                                                                        \
+        if(type == _NUMBER)                                                                                        \
         {                                                                                                       \
             fprintf(dotfile, " | value = %g}", root->val.number);                                               \
         }                                                                                                       \
@@ -24,11 +24,14 @@
         {                                                                                                       \
             if     (type == _LOG_OP) fprintf(dotfile, " | value = '\\%s'}", root->val.name);                    \
             else if(type == _STRING) fprintf(dotfile, " | value = \\\"%s\\\"}", root->val.name);                \
-            else fprintf(dotfile, " | value = %s}", root->val.name);                                            \
+            else                                                                                                \
+            {                                                                                                   \
+                fprintf(dotfile, " | value = %s}", root->val.name);                                             \
+            }                                                                                                   \
         }                                                                                                       \
         if(root->left_child == nullptr && root->right_child == nullptr)                                         \
         {                                                                                                       \
-            fprintf(dotfile,  "}\"];\n");                                                                      \
+            fprintf(dotfile,  "}\"];\n");                                                                       \
         }                                                                                                       \
         else                                                                                                    \
         {                                                                                                       \
@@ -97,7 +100,7 @@ void print_dot_tree(Node* root, FILE* dotfile)
     switch(TYPE)
     {
         case(_EMPTY)   : PRINT_NODE("white", _EMPTY,             "EMPTY");      break;
-        case(_NUM)     : PRINT_NODE("skyblue", _NUM,             "NUM");        break;
+        case(_NUMBER)  : PRINT_NODE("skyblue", _NUMBER,          "NUM");        break;
         case(_ARTH_OP) : PRINT_NODE("yellow", _ARTH_OP,          "ARTH_OP");    break;
         case(_VAR_DECL): PRINT_NODE("hotpink2", _VAR_DECL,       "VAR_DECL");   break;
         case(_VAR_NAME): PRINT_NODE("indianred1", _VAR_NAME,     "VAR_NAME");   break;
@@ -105,15 +108,15 @@ void print_dot_tree(Node* root, FILE* dotfile)
         case(_FNC_NAME): PRINT_NODE("limegreen", _FNC_NAME,      "FNC_NAME");   break;
         case(_ASSIGN)  : PRINT_NODE("grey82", _ASSIGN,           "ASSIGN");     break;
         case(_PARAM)   : PRINT_NODE("lightgreen", _PARAM,        "PARAM");      break;
-        case(_LOG_OP)  : PRINT_NODE("plum", _LOG_OP,             "LOG_OP");     break;
-        case(_LOOP)    : PRINT_NODE("tan", _LOOP,                "LOOP");       break;
+        case(_LOG_OP)  : PRINT_NODE("tan", _LOG_OP,              "LOG_OP");     break;
+        case(_LOOP)    : PRINT_NODE("plum", _LOOP,               "LOOP");       break;
         case(_COND_OP) : PRINT_NODE("pink", _COND_OP,            "COND_OP");    break;
         case(_RETURN)  : PRINT_NODE("sienna3", _RETURN,          "RETURN");     break;
         case(_STRING)  : PRINT_NODE("mediumpurple", _STRING,     "STRING");     break;
         default: printf("Error print_tree");                                    break;
     }
 
-    if(TYPE != _NUM)
+    if(TYPE != _NUMBER)
     {
         PRINT_CHILD;
     }                                                                                                                                                  
