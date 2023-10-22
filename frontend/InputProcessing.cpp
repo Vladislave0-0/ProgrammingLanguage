@@ -19,11 +19,20 @@ int text_info_ctor(struct InputInfo* InputInfo, const char* filename)
     CHECK_ERROR;
     num_of_chars(InputInfo, filename);
     chars_buffer(InputInfo);
+    CHECK_ERROR;
 
     count_tokens(InputInfo);
+    CHECK_ERROR;
     tokenization(InputInfo);
-    syntactic_analysis(InputInfo);
-    prog_scope_check(InputInfo);
+    CHECK_ERROR;
+    if(!syntactic_analysis(InputInfo))
+    {
+        return !SUCCESS;
+    }
+    if(check_prog_scope(InputInfo))
+    {
+        return !SUCCESS;
+    }
     open_lst_file(InputInfo, filename);
     listing(InputInfo);
 
@@ -31,6 +40,29 @@ int text_info_ctor(struct InputInfo* InputInfo, const char* filename)
 }
 
 #undef CHECK_ERROR
+
+//=========================================================================================
+
+int terminal_processing(int argc, char** argv, const char** filename)
+{
+    if(argc > 2)
+    {
+        printf(RED "\nToo many command line arguments!\n\n" RESET);
+        return ERROR_CMD_LINE_ARGS;
+    }
+
+    if(argc < 2)
+    {
+        *filename = "source.txt";
+    }
+    else if(argc == 2)
+    {
+        *filename = argv[1];
+    }
+
+    return SUCCESS;
+}
+
 
 //=========================================================================================
 
@@ -82,29 +114,25 @@ void open_lst_file(struct InputInfo* InputInfo, const char* filename)
 void num_of_chars(struct InputInfo* InputInfo, const char* filename)
 {
     struct stat buf = {};
-
     stat(filename, &buf);
-
     InputInfo->ch_num = buf.st_size + 1;
-
-    // printf("InputInfo->ch_num:\n%lu\n\n", InputInfo->ch_num);
 }
 
 //=========================================================================================
 
-void chars_buffer(struct InputInfo* InputInfo)
+int chars_buffer(struct InputInfo* InputInfo)
 {
     InputInfo->chars_buff_ptr = (char*)calloc(InputInfo->ch_num, sizeof(char));
     if(InputInfo->chars_buff_ptr == nullptr)
     {
         InputInfo->error = ERROR_CHARS_BUFFER;
-        return;
+        return ERROR_CHARS_BUFFER;
     }
     char* tmp_buff = (char*)calloc(InputInfo->ch_num, sizeof(char));
     if(tmp_buff == nullptr)
     {
         InputInfo->error = ERROR_CHARS_BUFFER;
-        return;
+        return ERROR_CHARS_BUFFER;
     }
     fread(tmp_buff, sizeof(char), InputInfo->ch_num - 1, InputInfo->mainfile);
     fclose(InputInfo->mainfile);
@@ -118,11 +146,6 @@ void chars_buffer(struct InputInfo* InputInfo)
                 tmp_buff[i++] = '\0';
             }
         }
-
-        // if((tmp_buff[i] == '\n') && (tmp_buff[i + 1] == '\n'))
-        // {
-        //     tmp_buff[i++] = '\0';
-        // }
 
         if(((tmp_buff[i] == '\n') && (tmp_buff[i + 1] == ' ')) || 
            ((tmp_buff[i] == ' ')  && (tmp_buff[i + 1] == ' ')))
@@ -158,19 +181,20 @@ void chars_buffer(struct InputInfo* InputInfo)
 
     free(tmp_buff);
     InputInfo->ch_num = strlen(InputInfo->chars_buff_ptr);
-    // printf("%s\n", InputInfo->chars_buff_ptr);
+    
+    return SUCCESS;
 }
 
 //=========================================================================================
 
-void count_tokens(struct InputInfo* InputInfo)
+int count_tokens(struct InputInfo* InputInfo)
 {
     char* cur_ptr  = nullptr;
     char* tmp_buff = (char*)calloc(InputInfo->ch_num + 1, sizeof(char));
     if(tmp_buff == nullptr)
     {
         InputInfo->error = ERROR_TOKS_ARR_CALLOC;
-        return;
+        return ERROR_TOKS_ARR_CALLOC;
     }
 
     for(size_t i = 0, j = 0; i < InputInfo->ch_num; i++)
@@ -237,7 +261,7 @@ void count_tokens(struct InputInfo* InputInfo)
 
     free(tmp_buff);
 
-    // printf("%lu\n", InputInfo->tok_num);
+    return SUCCESS;
 }
 
 //=========================================================================================
@@ -248,9 +272,14 @@ struct KnownTokenInfo
     TypeOfToken type;
 };
 
-void tokenization(struct InputInfo* InputInfo)
+int tokenization(struct InputInfo* InputInfo)
 {
     char* tmp_buff = (char*)calloc(InputInfo->ch_num + 1, sizeof(char));
+    if(tmp_buff == nullptr)
+    {
+        InputInfo->error = ERROR_TOKENIZATION_BUF;
+        return ERROR_TOKENIZATION_BUF;
+    }
     
     size_t j = 0;
     for(size_t i = 0; i < InputInfo->ch_num; i++)
@@ -405,21 +434,6 @@ void tokenization(struct InputInfo* InputInfo)
 
     free(tmp_buff);
 
-    int main_cnt = 0;
-    for(size_t i = 0; i < InputInfo->tok_num; i++)
-    {
-        if(InputInfo->tok_arr[i].type == MAIN)
-        {
-            main_cnt++;
-            break;
-        }
-    }
-    if(main_cnt == 0)
-    {
-        InputInfo->error = ERROR_UNDEF_REF_TO_MAIN;
-    }
-
-
     // printf("\n\nInputInfo->tok_arr:\n\n");
     // for(size_t i = 0; i < InputInfo->tok_num; i++)
     // {
@@ -429,6 +443,8 @@ void tokenization(struct InputInfo* InputInfo)
     //     printf("error:      %d\n\n", InputInfo->tok_arr[i].error);
     // }
     // printf("\n\n");
+
+    return SUCCESS;
 }
 
 //=========================================================================================
@@ -437,12 +453,19 @@ void tokenization(struct InputInfo* InputInfo)
 #define TEXT  InputInfo->tok_arr[cur_tok].text 
 #define ERROR InputInfo->tok_arr[cur_tok].error
 
-#define R_VAL (TYPE == NUMBER   || TYPE == VAR_NAME ||      \
-               TYPE == RND_BRC  || TYPE == ARTH_OP  ||      \
-               TYPE == FNC_NAME || TYPE == COMMA)           \
 
-#define CHECK_TOK(type, err)                                                            \
-        cur_tok++;                                                                      \
+#define RVAL                                        \
+        TYPE == NUMBER  || TYPE == VAR_NAME ||      \
+        TYPE == RND_BRC || TYPE == FNC_NAME ||      \
+        TYPE == ARTH_OP                             \
+
+
+#define CHECK_RVAL          \
+        while(RVAL)         \
+              cur_tok++;    \
+
+
+#define CHECK_TYPE(type, err, add_tok_flag)                                             \
         if(cur_tok < InputInfo->tok_num)                                                \
         {                                                                               \
             if(TYPE != type)                                                            \
@@ -455,9 +478,24 @@ void tokenization(struct InputInfo* InputInfo)
         {                                                                               \
             InputInfo->tok_arr[InputInfo->tok_num - 1].error = ERROR_FILE_STRUCTURE;    \
         }                                                                               \
+        if(add_tok_flag)                                                                \
+            cur_tok++;                                                                  \
 
-void syntactic_analysis(struct InputInfo* InputInfo)
+
+#define CHECK_NAME(token, err, add_tok_flag)    \
+        if(strcmp(token, TEXT))                 \
+            ERROR = err;                        \
+        if(add_tok_flag)                        \
+            cur_tok++;                          \
+
+
+int syntactic_analysis(struct InputInfo* InputInfo)
 {
+    if(check_bracket_sequence(InputInfo))
+    {
+        return !SUCCESS;
+    }
+
     int errors = 0;
     for(size_t cur_tok = 0; cur_tok < InputInfo->tok_num; cur_tok++)
     {
@@ -465,41 +503,42 @@ void syntactic_analysis(struct InputInfo* InputInfo)
         {
             case(VAR_DECL):
             {
-                CHECK_TOK(VAR_NAME, ERROR_IN_VAR_INIT_CONSTR);
-                CHECK_TOK(ASSIGN, ERROR_IN_VAR_INIT_CONSTR);
                 cur_tok++;
-                while(R_VAL)
-                {
-                    cur_tok++;
-                }
-                cur_tok--;
-                CHECK_TOK(SEMICLN, ERROR_IN_VAR_INIT_CONSTR);
+                CHECK_TYPE(VAR_NAME, ERROR_IN_VAR_DECL_CONSTR, 1);
+                CHECK_TYPE(ASSIGN, ERROR_IN_VAR_DECL_CONSTR, 1);
+                CHECK_RVAL;
+                CHECK_TYPE(SEMICLN, ERROR_IN_VAR_DECL_CONSTR, 0);
 
                 break;
             }
             
             case(FNC_DECL):
             {
-                if(InputInfo->tok_arr[cur_tok + 1].type != MAIN)
+                cur_tok++;
+
+                if(InputInfo->tok_arr[cur_tok].type != MAIN)
                 {
-                    CHECK_TOK(FNC_NAME, ERROR_IN_FNC_DECL_CONSTR);
-                    CHECK_TOK(RND_BRC, ERROR_IN_FNC_DECL_CONSTR);
-                    cur_tok++;
-                    while(TYPE == COMMA || TYPE == VAR_NAME)
+                    CHECK_TYPE(FNC_NAME, ERROR_IN_FNC_DECL_CONSTR, 1);
+                    CHECK_NAME("(", ERROR_IN_FNC_DECL_CONSTR, 1);
+                    if(TYPE == VAR_NAME)
                     {
                         cur_tok++;
+                        while(TYPE == COMMA)
+                        {
+                            cur_tok++;
+                            CHECK_TYPE(VAR_NAME, ERROR_IN_FNC_DECL_CONSTR, 1);
+                        }
                     }
-                    cur_tok--;
-                    CHECK_TOK(RND_BRC, ERROR_IN_FNC_DECL_CONSTR);
-                    CHECK_TOK(CRL_BRC, ERROR_IN_FNC_DECL_CONSTR);
+                    CHECK_NAME(")", ERROR_IN_FNC_DECL_CONSTR, 1);
+                    CHECK_NAME("{", ERROR_IN_FNC_DECL_CONSTR, 0);
                 }
 
                 else
                 {
                     cur_tok++;
-                    CHECK_TOK(RND_BRC, ERROR_IN_FNC_DECL_CONSTR);
-                    CHECK_TOK(RND_BRC, ERROR_IN_FNC_DECL_CONSTR);
-                    CHECK_TOK(CRL_BRC, ERROR_IN_FNC_DECL_CONSTR);
+                    CHECK_NAME("(", ERROR_IN_MAIN_DECL, 1);
+                    CHECK_NAME(")", ERROR_IN_MAIN_DECL, 1);
+                    CHECK_NAME("{", ERROR_IN_MAIN_DECL, 0);
                 }
 
                 break;
@@ -509,47 +548,34 @@ void syntactic_analysis(struct InputInfo* InputInfo)
             {
                 if(!strcmp(TEXT, "if"))
                 {
-                    CHECK_TOK(RND_BRC, ERROR_IN_COND_OP_CONSTR);
                     cur_tok++;
-                    while(R_VAL)
-                    {
-                        cur_tok++;
-                    }
+                    CHECK_NAME("(", ERROR_IN_IF_CONSTR, 1);
+                    CHECK_RVAL;
+                    CHECK_TYPE(LOG_OP, ERROR_IN_IF_CONSTR, 1);
+                    CHECK_RVAL;
                     cur_tok--;
-                    CHECK_TOK(LOG_OP, ERROR_IN_COND_OP_CONSTR);
-                    cur_tok++;
-                    while(R_VAL)
-                    {
-                        cur_tok++;
-                    }
-                    cur_tok -= 2;
-                    CHECK_TOK(RND_BRC, ERROR_IN_COND_OP_CONSTR);
-                    CHECK_TOK(CRL_BRC, ERROR_IN_COND_OP_CONSTR);
+                    CHECK_NAME(")", ERROR_IN_IF_CONSTR, 1);
+                    CHECK_NAME("{", ERROR_IN_IF_CONSTR, 0);
                 }
-
                 else if(!strcmp(TEXT, "elif"))
                 {
-                    CHECK_TOK(RND_BRC, ERROR_IN_COND_OP_CONSTR);
                     cur_tok++;
-                    while(R_VAL)
-                    {
-                        cur_tok++;
-                    }
+                    CHECK_TYPE(RND_BRC, ERROR_IN_ELIF_CONSTR, 1);
+                    CHECK_RVAL;
+                    CHECK_TYPE(LOG_OP, ERROR_IN_ELIF_CONSTR, 1);
+                    CHECK_RVAL;
                     cur_tok--;
-                    CHECK_TOK(LOG_OP, ERROR_IN_COND_OP_CONSTR);
-                    cur_tok++;
-                    while(R_VAL)
-                    {
-                        cur_tok++;
-                    }
-                    cur_tok -= 2;
-                    CHECK_TOK(RND_BRC, ERROR_IN_COND_OP_CONSTR);
-                    CHECK_TOK(CRL_BRC, ERROR_IN_COND_OP_CONSTR);
+                    CHECK_TYPE(RND_BRC, ERROR_IN_ELIF_CONSTR, 1);
+                    CHECK_TYPE(CRL_BRC, ERROR_IN_ELIF_CONSTR, 0);
                 }
-
                 else if(!strcmp(TEXT, "else"))
                 {
-                    CHECK_TOK(CRL_BRC, ERROR_IN_COND_OP_CONSTR);
+                    cur_tok++;
+                    CHECK_TYPE(CRL_BRC, ERROR_IN_ELSE_CONSTR, 0);
+                }
+                else
+                {
+                    printf(RED "\nUnknown conditional (%s) in syntactic_analysis!\n\n" RESET, TEXT);
                 }
 
                 break;
@@ -557,36 +583,24 @@ void syntactic_analysis(struct InputInfo* InputInfo)
 
             case(LOOP):
             {
-                CHECK_TOK(RND_BRC, ERROR_IN_LOOP_CONSTR);
                 cur_tok++;
-                while(R_VAL)
-                {
-                    cur_tok++;
-                }
+                CHECK_TYPE(RND_BRC, ERROR_IN_LOOP_CONSTR, 1);
+                CHECK_RVAL;
+                CHECK_TYPE(LOG_OP, ERROR_IN_LOOP_CONSTR, 1);
+                CHECK_RVAL;
                 cur_tok--;
-                CHECK_TOK(LOG_OP, ERROR_IN_LOOP_CONSTR);
-                cur_tok++;
-                while(R_VAL)
-                {
-                    cur_tok++;
-                }
-                cur_tok -= 2;
-                CHECK_TOK(RND_BRC, ERROR_IN_LOOP_CONSTR);
-                CHECK_TOK(CRL_BRC, ERROR_IN_LOOP_CONSTR);
+                CHECK_TYPE(RND_BRC, ERROR_IN_LOOP_CONSTR, 1);
+                CHECK_TYPE(CRL_BRC, ERROR_IN_LOOP_CONSTR, 0);
 
                 break;
             }
 
             case(VAR_NAME):
             {
-                CHECK_TOK(ASSIGN, ERROR_IN_VAR_NAME_CONSTR);
                 cur_tok++;
-                while(R_VAL)
-                {
-                    cur_tok++;
-                }
-                cur_tok--;
-                CHECK_TOK(SEMICLN, ERROR_IN_VAR_NAME_CONSTR);
+                CHECK_TYPE(ASSIGN, ERROR_IN_VAR_NAME_CONSTR, 1);
+                CHECK_RVAL;
+                CHECK_TYPE(SEMICLN, ERROR_IN_VAR_NAME_CONSTR, 0);
 
                 break;
             }
@@ -595,103 +609,69 @@ void syntactic_analysis(struct InputInfo* InputInfo)
             {
                 if(!strcmp(TEXT, "printf"))
                 {
-                    CHECK_TOK(RND_BRC, ERROR_IN_FNC_NAME_CONSTR);
                     cur_tok++;
+                    CHECK_TYPE(RND_BRC, ERROR_IN_FNC_PRINTF, 1);
                     if(TYPE == QUOTE)
                     {
-                        CHECK_TOK(STRING, ERROR_IN_FNC_NAME_CONSTR);
-                        CHECK_TOK(QUOTE, ERROR_IN_FNC_NAME_CONSTR);
+                        cur_tok++;
+                        CHECK_TYPE(STRING, ERROR_IN_FNC_PRINTF, 1);
+                        CHECK_TYPE(QUOTE, ERROR_IN_FNC_PRINTF, 1);
                     }
-
                     else
                     {
-                        cur_tok++;
-                        while(R_VAL)
-                        {
-                            cur_tok++;
-                        }
-                        cur_tok -= 2;
+                        CHECK_RVAL;
+                        cur_tok--;
                     }
-                    CHECK_TOK(RND_BRC, ERROR_IN_FNC_NAME_CONSTR);
-                    CHECK_TOK(SEMICLN, ERROR_IN_FNC_NAME_CONSTR);
-
-                    break;
+                    CHECK_TYPE(RND_BRC, ERROR_IN_FNC_PRINTF, 1);
+                    CHECK_TYPE(SEMICLN, ERROR_IN_FNC_PRINTF, 0);
                 }
 
                 else if(!strcmp(TEXT, "scanf"))
                 {
-                    CHECK_TOK(RND_BRC, ERROR_IN_FNC_NAME_CONSTR);
-                    CHECK_TOK(VAR_NAME, ERROR_IN_FNC_NAME_CONSTR);
-                    CHECK_TOK(RND_BRC, ERROR_IN_FNC_NAME_CONSTR);
-                    CHECK_TOK(SEMICLN, ERROR_IN_FNC_NAME_CONSTR);
-
-                    break;
-                }
-
-                else if(!strcmp(TEXT, "sqrt")   || !strcmp(TEXT, "sin")   || !strcmp(TEXT, "cos")    ||
-                        !strcmp(TEXT, "tg")     || !strcmp(TEXT, "ctg")   || !strcmp(TEXT, "arcsin") ||
-                        !strcmp(TEXT, "arccos") || !strcmp(TEXT, "arctg") || !strcmp(TEXT, "arcctg") ||
-                        !strcmp(TEXT, "sh")     || !strcmp(TEXT, "ch")    || !strcmp(TEXT, "ln")     ||
-                        !strcmp(TEXT, "exp"))
-                {
-                    CHECK_TOK(RND_BRC, ERROR_IN_FNC_NAME_CONSTR);
                     cur_tok++;
-                    while(R_VAL)
+                    CHECK_TYPE(RND_BRC, ERROR_IN_FNC_SCANF, 1);
+                    CHECK_TYPE(VAR_NAME, ERROR_IN_FNC_SCANF, 1);
+                    CHECK_TYPE(RND_BRC, ERROR_IN_FNC_SCANF, 1);
+                    CHECK_TYPE(SEMICLN, ERROR_IN_FNC_SCANF, 0);
+                }
+                else
+                {
+                    cur_tok++;
+                    CHECK_TYPE(RND_BRC, ERROR_IN_FNC_NAME_CONSTR, 1);
+                    while(RVAL || TYPE == COMMA)
                     {
                         cur_tok++;
                     }
                     cur_tok--;
-                    CHECK_TOK(RND_BRC, ERROR_IN_FNC_NAME_CONSTR);
-                    CHECK_TOK(SEMICLN, ERROR_IN_FNC_NAME_CONSTR);
-
-                    break;
-                } 
-
-                else
-                {
-                    CHECK_TOK(RND_BRC, ERROR_IN_FNC_NAME_CONSTR);
-                    cur_tok++;
-                    while(R_VAL || TYPE == COMMA)
-                    {
-                        cur_tok++;
-                    }
-                    cur_tok -= 2;
-                    CHECK_TOK(RND_BRC, ERROR_IN_FNC_NAME_CONSTR);
-                    CHECK_TOK(SEMICLN, ERROR_IN_FNC_NAME_CONSTR);
-
-                    break;
+                    CHECK_TYPE(RND_BRC, ERROR_IN_FNC_NAME_CONSTR, 1);
+                    CHECK_TYPE(SEMICLN, ERROR_IN_FNC_NAME_CONSTR, 0);
                 }
+
+                break;
             }
 
             case(RETURN):
             {
                 cur_tok++;
-                if(TYPE == FNC_NAME && (!strcmp(TEXT, "printf") || !strcmp(TEXT, "scanf") || 
-                                        !strcmp(TEXT, "sqrt")  || !strcmp(TEXT, "sin") || 
-                                        !strcmp(TEXT, "scanf") || !strcmp(TEXT, "scanf") || 
-                                        !strcmp(TEXT, "scanf") || !strcmp(TEXT, "scanf") || 
-                                        !strcmp(TEXT, "scanf") || !strcmp(TEXT, "scanf") || 
-                                        !strcmp(TEXT, "scanf") || !strcmp(TEXT, "scanf") || 
-                                        !strcmp(TEXT, "scanf") || !strcmp(TEXT, "scanf") || 
-                                        !strcmp(TEXT, "scanf")))
+                while(RVAL)
                 {
-                    ERROR = ERROR_IN_RETURN_CONSTR;
-
-                    break;
-                }
-                while(R_VAL)
-                {
+                    if(TYPE == FNC_NAME)
+                    {
+                        if(!strcmp(TEXT, "scanf") || !strcmp(TEXT, "printf"))
+                        {
+                            ERROR = ERROR_IN_RETURN_CONSTR;
+                        }
+                    }
                     cur_tok++;
                 }
-                cur_tok--;
-                CHECK_TOK(SEMICLN, ERROR_IN_RETURN_CONSTR);
+                CHECK_TYPE(SEMICLN, ERROR_IN_RETURN_CONSTR, 0);
 
                 break;
             }
 
             default:
             {
-                if(TYPE == ASSIGN || TYPE == ARTH_OP || TYPE == LOG_OP || TYPE == NUMBER || TYPE == RND_BRC || TYPE == CRL_BRC || TYPE == COMMA || TYPE == SEMICLN || TYPE == QUOTE || TYPE == STRING)
+                if(TYPE == RND_BRC || TYPE == CRL_BRC)
                 {
                     break;
                 }
@@ -701,88 +681,130 @@ void syntactic_analysis(struct InputInfo* InputInfo)
             }
         }
     }
+    if(errors)
+    {
+        return !SUCCESS;
+    }
+    if(!check_main(InputInfo))
+    {
+    
 
-    int rnd_brc_num = 0, crl_brc_num = 0, quote_num = 0;
+        return !SUCCESS;
+    }
+
+    return SUCCESS;
+}
+
+#undef RVAL
+#undef CHECK_TOK
+#undef CHECK_RVAL
+#undef CHECK_TYPE
+#undef CHECK_NAME
+
+//=========================================================================================
+
+int check_bracket_sequence(struct InputInfo* InputInfo)
+{
+    int rnd_num = 0, crl_num = 0, quote_num = 0;
     size_t last_rnd = 0, last_crl = 0, last_quote = 0;
 
     for(size_t cur_tok = 0; cur_tok < InputInfo->tok_num; cur_tok++)
     {
-        if(TYPE == RND_BRC || TYPE == CRL_BRC || TYPE == QUOTE)
+        switch(TYPE)
         {
-            switch(TYPE)
+            case(RND_BRC):
             {
-                case(RND_BRC):
+                if(!strcmp(TEXT, "("))
+                    rnd_num++;
+                else
+                    rnd_num--;
+                last_rnd = cur_tok;
+
+                if(rnd_num < 0) 
                 {
-                    if(!strcmp(TEXT, "("))
-                    {
-                        rnd_brc_num++;
-                    }
-                    else
-                    {
-                        rnd_brc_num--;
-                    }
-                    last_rnd = cur_tok;
-
-                    if(rnd_brc_num < 0)
-                    {
-                        ERROR = ERROR_BRACKET_STRUCTURE;
-                    }
-                    break;
+                    ERROR = ERROR_BRACKET_SEQUENSE;
+                    return ERROR_BRACKET_SEQUENSE;
                 }
+                break;
+            }
 
-                case(CRL_BRC):
+            case(CRL_BRC):
+            {
+                if(!strcmp(TEXT, "{"))
+                    crl_num++;
+                else
+                    crl_num--;
+                last_crl = cur_tok;
+                
+                if(crl_num < 0)
                 {
-                    if(!strcmp(TEXT, "{"))
-                    {
-                        crl_brc_num++;
-                    }
-                    else
-                    {
-                        crl_brc_num--;
-                    }
-                    last_crl = cur_tok;
-
-                    if(crl_brc_num < 0)
-                    {
-                        ERROR = ERROR_BRACKET_STRUCTURE;
-                    }
-                    break;
+                    ERROR = ERROR_BRACKET_SEQUENSE;
+                    return ERROR_BRACKET_SEQUENSE;
                 }
+                break;
+            }
 
-                case(QUOTE):
-                {
-                    quote_num++;
-                    last_quote = cur_tok;
-                    break;
-                }
+            case(QUOTE):
+            {
+                quote_num++;
+                last_quote = cur_tok;
+                break;
+            }
 
-                default:
-                {
-                    break;
-                }
+            default:
+            {
+                break;
             }
         }
     }
 
-    if(rnd_brc_num != 0)
+    if(rnd_num != 0)
     {
-        InputInfo->tok_arr[last_rnd].error = ERROR_BRACKET_STRUCTURE;
+        InputInfo->tok_arr[last_rnd].error = ERROR_BRACKET_SEQUENSE;
+        return ERROR_BRACKET_SEQUENSE;
     }
-    if(crl_brc_num != 0)
+    if(crl_num != 0)
     {
-        InputInfo->tok_arr[last_crl].error = ERROR_BRACKET_STRUCTURE;
+        InputInfo->tok_arr[last_crl].error = ERROR_BRACKET_SEQUENSE;
+        return ERROR_BRACKET_SEQUENSE;
     }
     if(quote_num % 2 != 0)
     {
         InputInfo->tok_arr[last_quote].error = ERROR_QUOTE_STRUCTURE;
+        return ERROR_QUOTE_STRUCTURE;
     }
-}
 
-#undef R_VAL
-#undef CHECK_TOK
+    return SUCCESS;
+}
 
 //=========================================================================================
 
+int check_main(struct InputInfo* InputInfo)
+{
+    int main_cnt = 0;
+    for(size_t i = 0; i < InputInfo->tok_num; i++)
+    {
+        if(InputInfo->tok_arr[i].type == MAIN)
+        {
+            main_cnt++;
+            break;
+        }
+    }
+    if(main_cnt == 0)
+    {
+        InputInfo->error = ERROR_UNDEF_REF_TO_MAIN;
+        return ERROR_UNDEF_REF_TO_MAIN;
+    }
+    else if(main_cnt > 1)
+    {
+        InputInfo->error = ERROR_MAIN_REDEFINITION;
+        return ERROR_MAIN_REDEFINITION;
+    }
+
+    return SUCCESS;
+}
+
+//=========================================================================================
 #define LINE InputInfo->tok_arr[cur_tok].line
 
 void listing(struct InputInfo* InputInfo)
@@ -918,7 +940,7 @@ void listing(struct InputInfo* InputInfo)
 
 #define FNC_ARR InputInfo->fnc_arr
 
-void prog_scope_check(struct InputInfo* InputInfo)
+int check_prog_scope(struct InputInfo* InputInfo)
 {
     size_t fnc_decl_num = 0;
     for(size_t cur_tok = 0; cur_tok < InputInfo->tok_num; cur_tok++)
@@ -932,83 +954,63 @@ void prog_scope_check(struct InputInfo* InputInfo)
     InputInfo->fnc_num = fnc_decl_num;
     InputInfo->fnc_arr = (FunctionInfo*)calloc(fnc_decl_num, sizeof(FunctionInfo));
 
-    for(size_t cur_tok = 0, cur_fnc = 1; cur_tok < InputInfo->tok_num; cur_tok++)
+    if(InputInfo->fnc_arr == nullptr)
     {
-        if(TYPE == FNC_DECL)
-        {
-            cur_tok++;
-
-            if(TYPE != MAIN)
-            {
-                if(InputInfo->fnc_num == 1)
-                {
-                    cur_fnc--;
-                }
-                
-                strcpy(FNC_ARR[cur_fnc].name, TEXT);
-                FNC_ARR[cur_fnc].token_num = cur_tok;
-                cur_tok += 2;
-
-                size_t cur_arg = 0;
-                if(strcmp(TEXT, ")"))
-                {
-                    strcpy(FNC_ARR[cur_fnc].args_arr[cur_arg++], TEXT);
-                    cur_tok++;
-                    while(TYPE == COMMA)
-                    {
-                        cur_tok++;
-                        strcpy(FNC_ARR[cur_fnc].args_arr[cur_arg++], TEXT);
-                        cur_tok++;
-                    }
-                }
-                cur_tok++;
-                FNC_ARR[cur_fnc].args_num = cur_arg;
-
-                fill_fnc_vars(InputInfo, cur_fnc, cur_tok);
-            }
-
-            else
-            {
-                strcpy(FNC_ARR[0].name, TEXT);
-                FNC_ARR[0].token_num = cur_tok;
-                cur_tok += 3;
-
-                fill_fnc_vars(InputInfo, 0, cur_tok);
-            }
-
-            cur_fnc++;
-        }
+        return ERROR_FUNC_ARR_NULLPTR;
     }
 
-    // редекларация переменных внутри функций
-    for(size_t i = 0; i < fnc_decl_num; i++)
+    if(check_vars_scope(InputInfo))
     {
-        size_t args_num      = InputInfo->fnc_arr[i].args_num;
-        size_t vars_num      = InputInfo->fnc_arr[i].vars_num;
-        size_t glob_vars_num = InputInfo->fnc_arr[i].glob_vars_num;
-        size_t all_vars_num  = args_num + vars_num + glob_vars_num;
+        return !SUCCESS;
+    }
+
+    if(check_functions(InputInfo))
+    {
+        return !SUCCESS;
+    }
+
+    if(check_vars_redeclaration(InputInfo))
+    {
+        return !SUCCESS;
+    }
+
+    return SUCCESS;
+}
+
+//=========================================================================================
+
+int check_vars_redeclaration(struct InputInfo* InputInfo)
+{
+    for(size_t i = 0; i < InputInfo->fnc_num; i++)
+    {
+        size_t args_num     = InputInfo->fnc_arr[i].args_num;
+        size_t vars_num     = InputInfo->fnc_arr[i].vars_num;
+        size_t all_vars_num = args_num + vars_num;
         char** some_arr = (char**)calloc(all_vars_num, sizeof(char*));
+        if(some_arr == nullptr)
+        {
+            InputInfo->error = ERROR_VARS_REDECLARATION_BUFFER;
+            return ERROR_VARS_REDECLARATION_BUFFER;
+        }
         size_t j = 0;
 
         for(size_t z = 0; z < args_num; j++, z++)
         {
             some_arr[j] = InputInfo->fnc_arr[i].args_arr[z];
+            
         }
         for(size_t z = 0; z < vars_num; j++, z++)
         {
             some_arr[j] = InputInfo->fnc_arr[i].decl_vars[z];
         }
-        for(size_t z = 0; z < glob_vars_num; j++, z++)
-        {
-            some_arr[j] = InputInfo->fnc_arr[i].glob_vars[z];
-        }
 
         int vars_conflict_flag = 0;
-        for(size_t k = 0; k < j - glob_vars_num; k++)
+        for(size_t k = 0; k < j; k++)
         {
             if(vars_conflict_flag != 0)
             {
                 InputInfo->tok_arr[InputInfo->fnc_arr[i].token_num].error = ERROR_CONFLICT_VAR_DECL;
+                InputInfo->error = ERROR_CONFLICT_VAR_DECL;
                 break;
             }
 
@@ -1025,63 +1027,23 @@ void prog_scope_check(struct InputInfo* InputInfo)
         free(some_arr);
     }
 
-    // int scanf_arg_flag = 0;
-    // проверки корректности scanf
-    // for(size_t cur_tok = 0; cur_tok < InputInfo->tok_num; cur_tok++)
-    // {
-    //     if(!strcmp(TEXT, "scanf"))
-    //     {
-    //         size_t scanf_tok = cur_tok;
-    //         cur_tok += 2;
-    //         for(size_t j = 0; j < InputInfo->fnc_arr[0].glob_vars_num; j++)
-    //         {
-    //             if(!strcmp(TEXT, InputInfo->fnc_arr[0].glob_vars[j]))
-    //             {
-    //                 scanf_arg_flag = 1;
-    //             }
-    //         }
+    return SUCCESS;
+}
 
-    //         if(scanf_arg_flag == 0)
-    //         {
-    //             InputInfo->tok_arr[scanf_tok].error = ERROR_SCANF_UNKNOWN_ARG;
-    //         }
+//=========================================================================================
 
-    //         scanf_arg_flag = 0;
-    //     }
-    // }
-
-    // редекларация функций
-    int fnc_conflict_flag = 0;
-    for(size_t k = 0; k < fnc_decl_num; k++)
-    {
-        if(fnc_conflict_flag != 0)
-        {
-            InputInfo->tok_arr[InputInfo->fnc_arr[k].token_num].error = ERROR_FUNC_OVERLOAD;
-            break;
-        }
-
-        for(size_t m = k + 1; m < fnc_decl_num; m++)
-        {
-            if(!strcmp(InputInfo->fnc_arr[k].name, InputInfo->fnc_arr[m].name))
-            {
-                fnc_conflict_flag = 1;
-                break;
-            }
-        }
-    }
-
-    // редекларация глобальных переменных
-    size_t glob_vars_num = 0;
+int check_vars_scope(struct InputInfo* InputInfo)
+{
     int crl_brc_num = 0;
     for(size_t cur_tok = 0; cur_tok < InputInfo->tok_num; cur_tok++)
     {
-        if(!strcmp(TEXT, "{"))
+        if(TYPE == CRL_BRC)
         {
-            crl_brc_num++;
-            continue;
-        }
-        if(!strcmp(TEXT, "}"))
-        {
+            if(!strcmp(TEXT, "{"))
+            {
+                crl_brc_num++;
+                continue;
+            }
             crl_brc_num--;
             continue;
         }
@@ -1089,65 +1051,93 @@ void prog_scope_check(struct InputInfo* InputInfo)
         if(TYPE == VAR_DECL)
         {
             cur_tok++;
-            if(crl_brc_num == 0)
+            if(crl_brc_num != 1)
             {
-                glob_vars_num++;
+                ERROR = ERROR_VAR_SCOPE;
+                InputInfo->error = ERROR_VAR_SCOPE;
             }
             cur_tok++;
         }
     }
-    char** glob_vars_arr = (char**)calloc(glob_vars_num, sizeof(char*));
-    size_t* glob_vars_toks = (size_t*)calloc(glob_vars_num, sizeof(size_t));
-    for(size_t cur_tok = 0, cur_glob_var = 0; cur_tok < InputInfo->tok_num; cur_tok++)
-    {
-        if(!strcmp(TEXT, "{"))
-        {
-            crl_brc_num++;
-            continue;
-        }
-        if(!strcmp(TEXT, "}"))
-        {
-            crl_brc_num--;
-            continue;
-        }
 
-        if(TYPE == VAR_DECL && crl_brc_num == 0)
-        {
-            cur_tok++;
-            glob_vars_toks[cur_glob_var] = cur_tok;
-            glob_vars_arr[cur_glob_var++] = TEXT;
-            cur_tok++;
-        }
-    }
-    int glob_var_conflict_flag = 0;
-    for(size_t k = 0; k < glob_vars_num; k++)
-    {
-        size_t m = k + 1;
-        for(; m < glob_vars_num; m++)
-        {
-            if(!strcmp(glob_vars_arr[k], glob_vars_arr[m]))
-            {
-                glob_var_conflict_flag = 1;
-                break;
-            }
-        }
-
-        if(glob_var_conflict_flag != 0)
-        {
-            InputInfo->tok_arr[glob_vars_toks[m]].error = ERROR_CONFLICT_VAR_DECL;
-            break;
-        }
-    }
-
-    
-
-    free(glob_vars_toks);
-    free(glob_vars_arr);
+    return InputInfo->error;
 }
 
 //=========================================================================================
 
-void fill_fnc_vars(struct InputInfo* InputInfo, size_t fnc_num, size_t crl_brc_tok)
+int check_functions(struct InputInfo* InputInfo)
+{
+    for(size_t cur_tok = 0, cur_fnc = 1; cur_tok < InputInfo->tok_num; cur_tok++)
+    {
+        if(TYPE == FNC_DECL)
+        {
+            cur_tok++;
+
+            if(TYPE != MAIN)
+            {
+                strcpy(FNC_ARR[cur_fnc].name, TEXT);
+                FNC_ARR[cur_fnc].token_num = cur_tok;
+                cur_tok += 2;
+
+                cur_tok = fill_func_args(InputInfo, cur_fnc, cur_tok);
+                fill_func_vars(InputInfo, cur_fnc, cur_tok);
+            }
+            else
+            {
+                strcpy(FNC_ARR[0].name, TEXT);
+                FNC_ARR[0].token_num = cur_tok;
+                cur_tok += 3;
+
+                fill_func_vars(InputInfo, 0, cur_tok);
+            }
+
+            cur_fnc++;
+        }
+    }
+
+    for(size_t i = 0; i < InputInfo->fnc_num; i++)
+    {
+        for(size_t j = i + 1; j < InputInfo->fnc_num; j++)
+        {
+            if(!strcmp(InputInfo->fnc_arr[i].name, InputInfo->fnc_arr[j].name))
+            {
+                InputInfo->tok_arr[InputInfo->fnc_arr[i].token_num].error = ERROR_FUNC_REDEFINITION;
+                InputInfo->tok_arr[InputInfo->fnc_arr[j].token_num].error = ERROR_FUNC_REDEFINITION;
+                InputInfo->error = ERROR_FUNC_REDEFINITION;
+            }
+        }
+    }
+
+    return InputInfo->error;
+}
+
+//=========================================================================================
+
+size_t fill_func_args(struct InputInfo* InputInfo, size_t func, size_t cur_tok)
+{
+    size_t cur_arg = 0;
+    if(strcmp(TEXT, ")"))
+    {
+        strcpy(FNC_ARR[func].args_arr[cur_arg++], TEXT);
+
+        cur_tok++;
+        while(TYPE == COMMA)
+        {
+            cur_tok++;
+            strcpy(FNC_ARR[func].args_arr[cur_arg++], TEXT);
+            cur_tok++;
+        }
+    }
+
+    FNC_ARR[func].args_num = cur_arg;
+    cur_tok++;
+
+    return cur_tok;
+}
+
+//=========================================================================================
+
+void fill_func_vars(struct InputInfo* InputInfo, size_t fnc_num, size_t crl_brc_tok)
 {
     int crl_brc_num = 0;
     size_t cur_tok = crl_brc_tok;
@@ -1160,47 +1150,21 @@ void fill_fnc_vars(struct InputInfo* InputInfo, size_t fnc_num, size_t crl_brc_t
 
     for(; crl_brc_num > 0; cur_tok++)
     {
-        if(!strcmp(TEXT, "{"))
+        if(TYPE == CRL_BRC)
         {
-            crl_brc_num++;
-            continue;
-        }
-        if(!strcmp(TEXT, "}"))
-        {
+            if(!strcmp(TEXT, "{"))
+            {
+                crl_brc_num++;
+                continue;
+            }
             crl_brc_num--;
             continue;
         }
-
         if(TYPE == VAR_DECL)
         {
             cur_tok++;
-            if(crl_brc_num > 1)
-            {
-                ERROR = ERROR_INVALID_VAR_DECL;
-            }
             strcpy(FNC_ARR[fnc_num].decl_vars[FNC_ARR[fnc_num].vars_num++], TEXT);
             cur_tok++;
-        }
-    }
-
-    crl_brc_num = 0;
-    for(cur_tok = 0; cur_tok < crl_brc_tok; cur_tok++)
-    {
-        if(!strcmp(TEXT, "{"))
-        {
-            crl_brc_num++;
-            continue;
-        }
-        if(!strcmp(TEXT, "}"))
-        {
-            crl_brc_num--;
-            continue;
-        }
-
-        if(crl_brc_num == 0 && TYPE == VAR_DECL)
-        {
-            cur_tok++;
-            strcpy(FNC_ARR[fnc_num].glob_vars[FNC_ARR[fnc_num].glob_vars_num++], TEXT);
         }
     }
 
@@ -1216,12 +1180,6 @@ void fill_fnc_vars(struct InputInfo* InputInfo, size_t fnc_num, size_t crl_brc_t
     // {
     //     printf("%ld --- %s\n", i, FNC_ARR[fnc_num].decl_vars[i]);
     // }
-    // printf("\n");
-    // printf("GLOB_VARS\n");
-    // for(size_t i = 0; i < FNC_ARR[fnc_num].glob_vars_num; i++)
-    // {
-    //     printf("%ld --- %s\n", i, FNC_ARR[fnc_num].glob_vars[i]);
-    // }
     // printf("\n\n");
 }
 
@@ -1234,7 +1192,6 @@ void fill_fnc_vars(struct InputInfo* InputInfo, size_t fnc_num, size_t crl_brc_t
 
 void prog_dtor(struct InputInfo* InputInfo)
 {
-    // printf("HUI\n");
     int errors_num = 0;
     for(size_t i = 0; i < InputInfo->tok_num; i++)
     {

@@ -1,5 +1,6 @@
 #include "backend.h"
 #include "math.h"
+
 //====================================================================================================================
 
 int backend_ctor(struct BackendInfo* BackInfo, struct InputInfo* InputInfo, Node* root, const char* filename)
@@ -258,6 +259,9 @@ int translate_return(struct BackendInfo* BackInfo, Node* root, const size_t fnc_
     return SUCCESS;
 }
 
+#undef STRING_B
+#undef STRING_C
+
 //====================================================================================================================
 
 int translate_right_value(struct BackendInfo* BackInfo, Node* root, const size_t fnc_id, FILE* asm_file)
@@ -402,6 +406,10 @@ int translate_programm_fnc(struct BackendInfo* BackInfo, Node* root, const size_
 
     return SUCCESS;
 }
+
+#undef STRING_A
+#undef STRING_D
+
 
 //====================================================================================================================
 

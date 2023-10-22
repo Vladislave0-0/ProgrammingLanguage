@@ -63,11 +63,9 @@ struct FunctionInfo
     char name[MAX_WORD_LENGTH]                          = {0};
     size_t token_num                                    = 0;  
     size_t args_num                                     = 0;  
-    size_t vars_num                                     = 0;  
-    size_t glob_vars_num                                = 0;
+    size_t vars_num                                     = 0;
     char args_arr[MAX_FUNC_ARGS][MAX_WORD_LENGTH]       = {0};
     char decl_vars[MAX_FUNC_VARS][MAX_WORD_LENGTH]      = {0};
-    char glob_vars[MAX_FUNC_GLOB_VARS][MAX_WORD_LENGTH] = {0}; 
 };
 
 struct InputInfo
@@ -88,27 +86,43 @@ struct InputInfo
 
 enum InputProcessingErrors
 {
-    SUCCESS                  = 0,
-    ERROR_CMD_LINE_ARGS      = 1,
-    ERROR_MAINFILE_OPEN      = 2,
-    ERROR_CHARS_BUFFER       = 3,
-    ERROR_TOKS_ARR_CALLOC    = 4,
-    ERROR_IN_VAR_INIT_CONSTR = 5,
-    ERROR_IN_FNC_DECL_CONSTR = 6,
-    ERROR_IN_COND_OP_CONSTR  = 7, 
-    ERROR_IN_LOOP_CONSTR     = 8,
-    ERROR_IN_VAR_NAME_CONSTR = 9,
-    ERROR_IN_FNC_NAME_CONSTR = 10,
-    ERROR_IN_RETURN_CONSTR   = 11,
-    ERROR_FILE_STRUCTURE     = 12,
-    ERROR_BRACKET_STRUCTURE  = 13,
-    ERROR_QUOTE_STRUCTURE    = 14,
-    ERROR_INVALID_VAR_DECL   = 15,
-    ERROR_CONFLICT_VAR_DECL  = 16,
-    ERROR_FUNC_OVERLOAD      = 17,
-    ERROR_UNDEF_REF_TO_MAIN  = 18,
-    ERROR_SCANF_UNKNOWN_ARG  = 19,
+    SUCCESS                           = 0,
+    ERROR_CMD_LINE_ARGS               = 1,
+    ERROR_MAINFILE_OPEN               = 2,
+    ERROR_CHARS_BUFFER                = 3,
+    ERROR_TOKS_ARR_CALLOC             = 4,
+    ERROR_TOKENIZATION_BUF            = 5,
+    ERROR_IN_VAR_DECL_CONSTR          = 6,
+    ERROR_INVALID_OPERAND_IN_VAR_DECL = 7,
+    ERROR_IN_FNC_DECL_CONSTR          = 8,
+    ERROR_IN_IF_CONSTR                = 9,
+    ERROR_IN_ELIF_CONSTR              = 10,
+    ERROR_IN_ELSE_CONSTR              = 11,
+    ERROR_IN_LOOP_CONSTR              = 12,
+    ERROR_IN_VAR_NAME_CONSTR          = 13,
+    ERROR_IN_FNC_NAME_CONSTR          = 14,
+    ERROR_IN_FNC_PRINTF               = 15,
+    ERROR_IN_FNC_SCANF                = 16,
+    ERROR_IN_MATH_FNC                 = 17,
+    ERROR_IN_MAIN_DECL                = 18,
+    ERROR_IN_RETURN_CONSTR            = 19,
+    ERROR_FILE_STRUCTURE              = 20,
+    ERROR_BRACKET_SEQUENSE            = 21,
+    ERROR_QUOTE_STRUCTURE             = 22,
+    ERROR_VAR_SCOPE                   = 23,
+    ERROR_CONFLICT_VAR_DECL           = 24,
+    ERROR_FUNC_OVERLOAD               = 25,
+    ERROR_UNDEF_REF_TO_MAIN           = 26,
+    ERROR_SCANF_UNKNOWN_ARG           = 27,
+    ERROR_MAIN_REDEFINITION           = 28,
+    ERROR_FUNC_REDEFINITION           = 29,
+    ERROR_FUNC_ARR_NULLPTR            = 30,
+    ERROR_VARS_REDECLARATION_BUFFER   = 31,
 };
+
+//================================================================================================
+
+int terminal_processing(int argc, char** argv, const char** filename);
 
 //================================================================================================
 
@@ -128,23 +142,47 @@ void num_of_chars(struct InputInfo* InputInfo, const char* filename);
 
 //================================================================================================
 
-void chars_buffer(struct InputInfo* InputInfo);
+int chars_buffer(struct InputInfo* InputInfo);
 
 //================================================================================================
 
-void count_tokens(struct InputInfo* InputInfo);
+int count_tokens(struct InputInfo* InputInfo);
 
 //================================================================================================
 
-void tokenization(struct InputInfo* InputInfo);
+int tokenization(struct InputInfo* InputInfo);
 
 //================================================================================================
 
-void syntactic_analysis(struct InputInfo* InputInfo);
+int syntactic_analysis(struct InputInfo* InputInfo);
 
 //================================================================================================
 
-void prog_scope_check(struct InputInfo* InputInfo);
+int check_bracket_sequence(struct InputInfo* InputInfo);
+
+//================================================================================================
+
+int check_main(struct InputInfo* InputInfo);
+
+//================================================================================================
+
+int check_prog_scope(struct InputInfo* InputInfo);
+
+//================================================================================================
+
+size_t fill_func_args(struct InputInfo* InputInfo, size_t func, size_t cur_tok);
+
+//================================================================================================
+
+int check_vars_redeclaration(struct InputInfo* InputInfo);
+
+//================================================================================================
+
+int check_vars_scope(struct InputInfo* InputInfo);
+
+//================================================================================================
+
+int check_functions(struct InputInfo* InputInfo);
 
 //================================================================================================
 
@@ -152,10 +190,12 @@ void listing(struct InputInfo* InputInfo);
 
 //================================================================================================
 
-void fill_fnc_vars(struct InputInfo* InputInfo, size_t fnc_num, size_t crl_brc_tok);
+void fill_func_vars(struct InputInfo* InputInfo, size_t fnc_num, size_t crl_brc_tok);
 
 //================================================================================================
 
 void prog_dtor(struct InputInfo* InputInfo);
+
+//================================================================================================
 
 #endif // INPUT_PROCESSING_H

@@ -86,7 +86,6 @@ Node* getProg(struct Tree* tree)
         {
             TOK++;
         }
-        // printf("%s\n", TEXT);
         right_child = getProg(tree);
         node = CREATE_EMPTY(left_child, right_child);
     }
@@ -158,7 +157,6 @@ Node* getFnc_name(struct Tree* tree)
         node = CREATE_FNC_NAME(nullptr, TEXT);
         TOK += 2;
         node->right_child = getFnc_params(tree);
-        // printf("HUI!\n");
     }
 
     return node;
@@ -246,8 +244,8 @@ Node* getFnc_decl(struct Tree* tree)
         node->left_child = CREATE_FNC_NAME(nullptr, TEXT);
         TOK += 4;
 
-        if(TYPE == VAR_DECL || TYPE == LOOP || TYPE == COND_OP || 
-           TYPE == RETURN   || TYPE == VAR_NAME)
+        if(TYPE == VAR_DECL || TYPE == LOOP     || TYPE == COND_OP || 
+           TYPE == RETURN   || TYPE == VAR_NAME || TYPE == FNC_NAME)
         {
             node->right_child = getProg(tree);
         }
@@ -266,8 +264,8 @@ Node* getFnc_decl(struct Tree* tree)
         node->left_child->right_child = getFnc_params(tree);
 
         TOK += 2;
-        if(TYPE == VAR_DECL || TYPE == LOOP || TYPE == COND_OP || 
-           TYPE == RETURN   || TYPE == VAR_NAME)
+        if(TYPE == VAR_DECL || TYPE == LOOP     || TYPE == COND_OP || 
+           TYPE == RETURN   || TYPE == VAR_NAME || TYPE == FNC_NAME)
         {
             node->right_child = getProg(tree);
         }
@@ -352,7 +350,6 @@ Node* getExp(struct Tree* tree)
             TOK++;
             parent = ADD_NODE(left_child, nullptr);
         }
-
         else
         {
             TOK++;
@@ -387,7 +384,6 @@ Node* getMul(struct Tree* tree)
             TOK++;
             parent = MUL_NODE(left_child, nullptr);
         }
-
         else
         {
             TOK++;
@@ -448,12 +444,10 @@ Node* getBrc(struct Tree* tree)
             return nullptr;
         }
     }
-
     else if(TYPE == NUMBER)
     {
         node = getNum(tree);
     }
-
     else
     {
         node = getWord(tree);
@@ -479,33 +473,31 @@ Node* getWord(struct Tree* tree)
     {
         const char* func_text = TEXT;
 
-        if(!strcasecmp(func_text, "sqrt")   || !strcasecmp(func_text, "sin")   || !strcasecmp(func_text, "cos")    || 
-           !strcasecmp(func_text, "tg")     || !strcasecmp(func_text, "ctg")   || !strcasecmp(func_text, "arcsin") ||
-           !strcasecmp(func_text, "arccos") || !strcasecmp(func_text, "arctg") || !strcasecmp(func_text, "arcctg") ||
-           !strcasecmp(func_text, "sh")     || !strcasecmp(func_text, "ch")    || !strcasecmp(func_text, "ln")     ||
-           !strcasecmp(func_text, "exp"))
+        if(!strcmp(func_text, "sqrt")   || !strcmp(func_text, "sin")   || !strcmp(func_text, "cos")    || 
+           !strcmp(func_text, "tg")     || !strcmp(func_text, "ctg")   || !strcmp(func_text, "arcsin") ||
+           !strcmp(func_text, "arccos") || !strcmp(func_text, "arctg") || !strcmp(func_text, "arcctg") ||
+           !strcmp(func_text, "sh")     || !strcmp(func_text, "ch")    || !strcmp(func_text, "ln")     ||
+           !strcmp(func_text, "exp"))
         {
             TOK += 2;
             Node* arg_node = getExp(tree);
-
             TOK++;
 
-            if(     !strcasecmp(func_text, "sqrt"))      node = SQRT_NODE  (arg_node);
-            else if(!strcasecmp(func_text, "sin"))       node = SIN_NODE   (arg_node);
-            else if(!strcasecmp(func_text, "cos"))       node = COS_NODE   (arg_node);
-            else if(!strcasecmp(func_text, "tg"))        node = TG_NODE    (arg_node);
-            else if(!strcasecmp(func_text, "ctg"))       node = CTG_NODE   (arg_node);
-            else if(!strcasecmp(func_text, "arcsin"))    node = ARCSIN_NODE(arg_node);
-            else if(!strcasecmp(func_text, "arccos"))    node = ARCCOS_NODE(arg_node);
-            else if(!strcasecmp(func_text, "arctg"))     node = ARCTG_NODE (arg_node);
-            else if(!strcasecmp(func_text, "arcctg"))    node = ARCCTG_NODE(arg_node);
-            else if(!strcasecmp(func_text, "sh"))        node = SH_NODE    (arg_node);
-            else if(!strcasecmp(func_text, "ch"))        node = CH_NODE    (arg_node);
-            else if(!strcasecmp(func_text, "ln"))        node = LN_NODE    (arg_node);
-            else if(!strcasecmp(func_text, "exp"))       node = EXP_NODE   (arg_node);
+            if(     !strcmp(func_text, "sqrt"))      node = SQRT_NODE  (arg_node);
+            else if(!strcmp(func_text, "sin"))       node = SIN_NODE   (arg_node);
+            else if(!strcmp(func_text, "cos"))       node = COS_NODE   (arg_node);
+            else if(!strcmp(func_text, "tg"))        node = TG_NODE    (arg_node);
+            else if(!strcmp(func_text, "ctg"))       node = CTG_NODE   (arg_node);
+            else if(!strcmp(func_text, "arcsin"))    node = ARCSIN_NODE(arg_node);
+            else if(!strcmp(func_text, "arccos"))    node = ARCCOS_NODE(arg_node);
+            else if(!strcmp(func_text, "arctg"))     node = ARCTG_NODE (arg_node);
+            else if(!strcmp(func_text, "arcctg"))    node = ARCCTG_NODE(arg_node);
+            else if(!strcmp(func_text, "sh"))        node = SH_NODE    (arg_node);
+            else if(!strcmp(func_text, "ch"))        node = CH_NODE    (arg_node);
+            else if(!strcmp(func_text, "ln"))        node = LN_NODE    (arg_node);
+            else if(!strcmp(func_text, "exp"))       node = EXP_NODE   (arg_node);
             else return nullptr;
         }
-        
         else
         {
             TOK += 2;
@@ -514,7 +506,6 @@ Node* getWord(struct Tree* tree)
             node->right_child = arg_node;
             TOK++;
         }
-
     }
 
     return node;

@@ -23,13 +23,12 @@ Node* create_node(Node* left_child, Node* right_child, NodeType type, const char
     {
         node->val.number = value;
     }
-    
     else
     {
         node->val.name = name;
     }
 
-    node->left_child = left_child;
+    node->left_child  = left_child;
     node->right_child = right_child;
 
     return node;
@@ -40,7 +39,6 @@ Node* create_node(Node* left_child, Node* right_child, NodeType type, const char
 void init_tree_dtor(struct Tree* tree)
 {
     childs_dtor(tree->root);
-
     free(tree);
     tree = nullptr;
 }
@@ -91,12 +89,11 @@ void tree_simplification(Node* root)
     {
         if(root->left_child != nullptr && root->right_child == nullptr && root->parent != nullptr)
         {
-            if(root->parent->left_child == root)
+            if(root == root->parent->left_child)
             {
                 root->parent->left_child = root->left_child;
             }
-
-            else if(root->parent->right_child == root)
+            else if(root == root->parent->right_child)
             {
                 root->parent->right_child = root->left_child;
             }
@@ -106,12 +103,11 @@ void tree_simplification(Node* root)
 
         else if(root->right_child != nullptr && root->left_child == nullptr && root->parent != nullptr)
         {
-            if(root->parent->left_child == root)
+            if(root == root->parent->left_child)
             {
                 root->parent->left_child = root->right_child;
             }
-
-            else if(root->parent->right_child == root)
+            else if(root == root->parent->right_child)
             {
                 root->parent->right_child = root->right_child;
             }
@@ -147,13 +143,11 @@ void parents_copy(struct Node* root)
     {
         return;
     }
-
     if(root->left_child != nullptr)
     {
         root->left_child->parent = root;
         parents_copy(root->left_child);
     }
-
     if(root->right_child != nullptr)
     {
         root->right_child->parent = root;

@@ -4,17 +4,6 @@
 #include "./graphviz/GraphvizFunctions.h"
 #include "./backend/backend.h"
 
-#define CHECK_ERROR                     \
-        if(InputInfo.error != 0)        \
-        {                               \
-            prog_dtor(&InputInfo);      \
-            return InputInfo.error;     \
-        }                               \
-
-//===================================================================================
-
-int terminal_processing(int argc, char** argv, const char** filename);
-
 //===================================================================================
 
 int main(int argc, char* argv[])
@@ -25,9 +14,16 @@ int main(int argc, char* argv[])
         return ERROR_CMD_LINE_ARGS;
     }
 
+
     struct InputInfo InputInfo = {};
     text_info_ctor(&InputInfo, filename);
-    CHECK_ERROR;
+    if(InputInfo.error != 0)        
+    {                               
+        prog_dtor(&InputInfo);      
+        return InputInfo.error;     
+    }                               
+
+
     Tree* prog_tree = tree_ctor(&InputInfo);
     prog_tree->root = make_tree(prog_tree);
     make_graph(prog_tree->root, "graphviz.txt");
@@ -45,26 +41,4 @@ int main(int argc, char* argv[])
         free(BackInfo.fnc_arr[i].all_vars_arr);
     }
     free(BackInfo.fnc_arr);
-}
-
-//===================================================================================
-
-int terminal_processing(int argc, char** argv, const char** filename)
-{
-    if(argc > 2)
-    {
-        printf(RED "\nToo many command line arguments!\n\n" RESET);
-        return ERROR_CMD_LINE_ARGS;
-    }
-
-    if(argc < 2)
-    {
-        *filename = "source.txt";
-    }
-    else if(argc == 2)
-    {
-        *filename = argv[1];
-    }
-
-    return SUCCESS;
 }
