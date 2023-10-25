@@ -35,7 +35,7 @@ while_1:
 push [ex+1]
 push 5
 jl :while_exec_1
-jump :while_exit_1
+jmp :while_exit_1
 while_exec_1:
 push 10128
 push 25152
@@ -44,7 +44,7 @@ push [ex+1]
 push 1
 add
 pop [ex+1]
-jump :while_1
+jmp :while_1
 while_exec_1:
 
 push 0
@@ -66,7 +66,7 @@ while_2:
 push [ex+1]
 push 5
 jl :while_exec_2
-jump :while_exit_2
+jmp :while_exit_2
 while_exec_2:
 push 12088
 push 25152
@@ -75,7 +75,7 @@ push [ex+1]
 push 1
 add
 pop [ex+1]
-jump :while_2
+jmp :while_2
 while_exec_2:
 
 push fx
@@ -94,7 +94,6 @@ push 1
 pop [ex+1]
 pop [ex+2]
 call :sum
-push ax
 
 push fx
 push ex
@@ -110,7 +109,6 @@ pop fx
 push -5
 pop [ex+1]
 call :some_fnc
-push ax
 
 push [ex+1]
 push 1

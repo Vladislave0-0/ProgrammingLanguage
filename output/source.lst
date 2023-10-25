@@ -91,7 +91,7 @@ quantity: 126
 |000085|		-5              |	  number		|		 28  		|		  0
 |000086|		)               |	  rnd_brc		|		 28  		|		  0
 |000087|		;               |	  semicln		|		 28  		|		  0
-|000088|		if              |	  conp_op		|		 30  		|		  0
+|000088|		if              |	  cond_op		|		 30  		|		  0
 |000089|		(               |	  rnd_brc		|		 30  		|		  0
 |000090|		y               |	  var_name		|		 30  		|		  0
 |000091|		==              |	  log_op		|		 30  		|		  0
@@ -104,7 +104,7 @@ quantity: 126
 |000098|		)               |	  rnd_brc		|		 32  		|		  0
 |000099|		;               |	  semicln		|		 32  		|		  0
 |000100|		}               |	  crl_brc		|		 33  		|		  0
-|000101|		elif            |	  conp_op		|		 34  		|		  0
+|000101|		elif            |	  cond_op		|		 34  		|		  0
 |000102|		(               |	  rnd_brc		|		 34  		|		  0
 |000103|		y               |	  var_name		|		 34  		|		  0
 |000104|		>               |	  log_op		|		 34  		|		  0
@@ -117,7 +117,7 @@ quantity: 126
 |000111|		)               |	  rnd_brc		|		 36  		|		  0
 |000112|		;               |	  semicln		|		 36  		|		  0
 |000113|		}               |	  crl_brc		|		 37  		|		  0
-|000114|		else            |	  conp_op		|		 38  		|		  0
+|000114|		else            |	  cond_op		|		 38  		|		  0
 |000115|		{               |	  crl_brc		|		 39  		|		  0
 |000116|		printf          |	  fnc_name		|		 40  		|		  0
 |000117|		(               |	  rnd_brc		|		 40  		|		  0

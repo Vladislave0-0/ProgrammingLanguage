@@ -4,17 +4,17 @@
 //================================================================================================
 
 #include <stdio.h>
-#include <assert.h>
 #include <stdlib.h>
 #include <sys/stat.h>   
 #include <string.h>
 
-const int MAX_WORD_LENGTH    = 32;
-const float POISON           = (float)0xDEADDED;
-const int MAX_KNOWN_TOKENS   = 42;
-const int MAX_FUNC_ARGS      = 5;
-const int MAX_FUNC_VARS      = 20;
-const int MAX_FUNC_GLOB_VARS = 10;
+//================================================================================================
+
+const int MAX_WORD_LENGTH  = 32;
+const float POISON         = (float)0xDEADDED;
+const int MAX_KNOWN_TOKENS = 42;
+const int MAX_FUNC_ARGS    = 10;
+const int MAX_FUNC_VARS    = 20;
 
 //================================================================================================
 
@@ -60,12 +60,12 @@ struct TokenInfo
 
 struct FunctionInfo
 {
-    char name[MAX_WORD_LENGTH]                          = {0};
-    size_t token_num                                    = 0;  
-    size_t args_num                                     = 0;  
-    size_t vars_num                                     = 0;
-    char args_arr[MAX_FUNC_ARGS][MAX_WORD_LENGTH]       = {0};
-    char decl_vars[MAX_FUNC_VARS][MAX_WORD_LENGTH]      = {0};
+    char name[MAX_WORD_LENGTH]                     = {0};
+    size_t token_num                               = 0;  
+    size_t args_num                                = 0;  
+    size_t vars_num                                = 0;
+    char args_arr[MAX_FUNC_ARGS][MAX_WORD_LENGTH]  = {0};
+    char decl_vars[MAX_FUNC_VARS][MAX_WORD_LENGTH] = {0};
 };
 
 struct InputInfo
@@ -84,7 +84,7 @@ struct InputInfo
     int error = 0;                             
 };
 
-enum InputProcessingErrors
+enum FrontendErrors
 {
     SUCCESS                           = 0,
     ERROR_CMD_LINE_ARGS               = 1,
@@ -122,11 +122,11 @@ enum InputProcessingErrors
 
 //================================================================================================
 
-int terminal_processing(int argc, char** argv, const char** filename);
+int text_info_ctor(struct InputInfo* InputInfo, const char** filename, int argc, char** argv);
 
 //================================================================================================
 
-int text_info_ctor(struct InputInfo* InputInfo, const char* filename);
+int terminal_processing(int argc, char** argv, const char** filename);
 
 //================================================================================================
 
@@ -186,15 +186,15 @@ int check_functions(struct InputInfo* InputInfo);
 
 //================================================================================================
 
-void listing(struct InputInfo* InputInfo);
-
-//================================================================================================
-
 void fill_func_vars(struct InputInfo* InputInfo, size_t fnc_num, size_t crl_brc_tok);
 
 //================================================================================================
 
-void prog_dtor(struct InputInfo* InputInfo);
+void listing(struct InputInfo* InputInfo);
+
+//================================================================================================
+
+void frontend_dtor(struct InputInfo* InputInfo);
 
 //================================================================================================
 

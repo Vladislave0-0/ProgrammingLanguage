@@ -8,7 +8,7 @@ Node* make_tree(struct Tree* tree)
 
     if(root == nullptr)
     {
-        printf("in make_tree root nullptr\n");
+        printf("Root is nullptr in make_tree!\n");
     }
 
     parents_copy(root);
@@ -252,7 +252,7 @@ Node* getFnc_decl(struct Tree* tree)
 
         else
         {
-            printf(RED "\n\nUNKNOWN TYPE IN getFnc_decl\n\n" RESET);
+            printf(RED "\nUnknown type in getFnc_decl!\n\n" RESET);
         }
     }
 
@@ -272,7 +272,7 @@ Node* getFnc_decl(struct Tree* tree)
 
         else
         {
-            printf(RED "\n\nUNKNOWN TYPE IN getFnc_decl\n\n" RESET);
+            printf(RED "\nUnknown type in getFnc_decl!\n\n" RESET);
         }
     }
 
@@ -521,7 +521,7 @@ Node* getNum(struct Tree* tree)
     }
     else
     {
-        printf("ERROR IN GET_NUM");
+        printf(RED "\nError number reading in getNum!\n\n" RESET);
         return nullptr;
     }
 }

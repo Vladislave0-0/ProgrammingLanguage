@@ -6,7 +6,7 @@
 #define PRINT_NODE(color, type, type_text)                                                                      \
         fprintf(dotfile, "\tnode_%p [style = \"filled\", fillcolor = %s, shape = Mrecord, label = "             \
                          "\"{{<f1> %p} | {type: %s", root, color, root, type_text);                             \
-        if(type == _NUMBER)                                                                                        \
+        if(type == _NUMBER)                                                                                     \
         {                                                                                                       \
             fprintf(dotfile, " | value = %g}", root->val.number);                                               \
         }                                                                                                       \
@@ -57,14 +57,6 @@ void make_graph(Node* root, const char* filename)
     char path[50] = "./output/";
     strcat(path, filename);
     FILE* dotfile = fopen(path, "w");
-
-    // if(dotfile == nullptr)
-    // {
-    //     printf(RED "\nIn function %s at %s(%u):\nError code: %d. Check file \"Tree.h\" to decipher "
-    //                "the error code.\n\n" RESET, __PRETTY_FUNCTION__, __FILE__, __LINE__, ERROR_OPEN_GRAPHVIZ_FILE);       
-
-    //     return;
-    // }
 
     fprintf(dotfile, "digraph tree\n");
     fprintf(dotfile, "{\n");

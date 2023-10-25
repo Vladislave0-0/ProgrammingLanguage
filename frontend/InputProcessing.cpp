@@ -1,7 +1,7 @@
 #include "./InputProcessing.h"
+#include "../include/colors.h"
 #include <string.h>
 #include <ctype.h>
-#include "../include/colors.h"
 
 //=========================================================================================
 
@@ -13,11 +13,15 @@
 
 //=========================================================================================
 
-int text_info_ctor(struct InputInfo* InputInfo, const char* filename)
+int text_info_ctor(struct InputInfo* InputInfo, const char** filename, int argc, char** argv)
 {
-    open_file(InputInfo, filename);
+    if(terminal_processing(argc, argv, filename))
+    {
+        return ERROR_CMD_LINE_ARGS;
+    }
+    open_file(InputInfo, *filename);
     CHECK_ERROR;
-    num_of_chars(InputInfo, filename);
+    num_of_chars(InputInfo, *filename);
     chars_buffer(InputInfo);
     CHECK_ERROR;
 
@@ -33,7 +37,7 @@ int text_info_ctor(struct InputInfo* InputInfo, const char* filename)
     {
         return !SUCCESS;
     }
-    open_lst_file(InputInfo, filename);
+    open_lst_file(InputInfo, *filename);
     listing(InputInfo);
 
     return SUCCESS;
@@ -62,7 +66,6 @@ int terminal_processing(int argc, char** argv, const char** filename)
 
     return SUCCESS;
 }
-
 
 //=========================================================================================
 
@@ -289,8 +292,13 @@ int tokenization(struct InputInfo* InputInfo)
             tmp_buff[j++] = InputInfo->chars_buff_ptr[i];
         }
     }
-    // printf("%s\n", tmp_buff);
+
     InputInfo->tok_arr = (TokenInfo*)calloc(InputInfo->tok_num, sizeof(TokenInfo));
+    if(InputInfo->tok_arr == nullptr)
+    {
+        InputInfo->error = ERROR_TOKENIZATION_BUF;
+        return ERROR_TOKENIZATION_BUF;
+    }
 
     struct KnownTokenInfo all_token[MAX_KNOWN_TOKENS] = {{"main",  MAIN},     {"printf", FNC_NAME}, {"scanf",  FNC_NAME}, {"return", RETURN}, 
                                                          {"if",    COND_OP},  {"elif",   COND_OP},  {"else",   COND_OP},  {"while",  LOOP}, 
@@ -334,7 +342,7 @@ int tokenization(struct InputInfo* InputInfo)
                         break;
                     }
                 }
-                // тут различаем унарный минус от отрицательного числа
+                // обработка унарного минуса и отрицательного числа
                 if(tmp_buff[cur_ch] == '-' && !isdigit(tmp_buff[cur_ch - 1]) && !isalpha(tmp_buff[cur_ch - 1]))
                 {
                     InputInfo->tok_arr[cur_tok].number = (float)atof(tmp_buff + cur_ch);
@@ -346,13 +354,13 @@ int tokenization(struct InputInfo* InputInfo)
                     break;
                 }
 
-                // тут токенизируем '"', потом строковый литерал, и потом снова '"'
+                // токенизация строкового литерала
                 if(tmp_buff[cur_ch] == '"')
                 {
                     InputInfo->tok_arr[cur_tok].text[0] = '"';
                     InputInfo->tok_arr[cur_tok].line    = cur_line;
                     InputInfo->tok_arr[cur_tok].type    = QUOTE;
-                    cur_ch++; // because of strlen of "\""
+                    cur_ch++;
 
                     cur_tok++;
                     size_t strlen  = 0;
@@ -372,7 +380,7 @@ int tokenization(struct InputInfo* InputInfo)
                         InputInfo->tok_arr[cur_tok].text[0] = '"';
                         InputInfo->tok_arr[cur_tok].line    = cur_line;
                         InputInfo->tok_arr[cur_tok].type    = QUOTE;
-                        cur_ch++; // because of strlen of "\""
+                        cur_ch++;
                     }
 
                     break;
@@ -388,7 +396,7 @@ int tokenization(struct InputInfo* InputInfo)
             word_flag++;
         }
 
-        // токенизируем число или переменную
+        // токензация чисел и переменных
         if(word_flag == MAX_KNOWN_TOKENS)
         {
             InputInfo->tok_arr[cur_tok].line = cur_line;
@@ -805,7 +813,29 @@ int check_main(struct InputInfo* InputInfo)
 }
 
 //=========================================================================================
-#define LINE InputInfo->tok_arr[cur_tok].line
+
+#define LST_TYPE(type, space_num, tab_num)                                      \
+        case(type):                                                             \
+        {                                                                       \
+            const char* str_type = #type;                                       \
+            size_t str_len = strlen(str_type);                                  \
+            fprintf(InputInfo->lst_file, "  ");                                 \
+            for(size_t i = 0; i < str_len; i++)                                 \
+            {                                                                   \
+                fprintf(InputInfo->lst_file, "%c", tolower(str_type[i]));       \
+            }                                                                   \
+            for(int i = 0; i < space_num; i++)                                  \
+            {                                                                   \
+                fprintf(InputInfo->lst_file, " ");                              \
+            }                                                                   \
+            for(int i = 0; i < tab_num; i++)                                    \
+            {                                                                   \
+                fprintf(InputInfo->lst_file, "\t");                             \
+            }                                                                   \
+            fprintf(InputInfo->lst_file, "|\t\t");                              \
+            break;                                                              \
+        }
+
 
 void listing(struct InputInfo* InputInfo)
 {
@@ -829,96 +859,24 @@ void listing(struct InputInfo* InputInfo)
         
         switch(TYPE)
         {
-            case(VAR_DECL):
-            {
-                fprintf(InputInfo->lst_file, "  var_decl\t\t|\t\t");
-                break;
-            }
-            case(FNC_DECL):
-            {
-                fprintf(InputInfo->lst_file, "  fnc_decl\t\t|\t\t");
-                break;
-            }
-            case(ASSIGN):
-            {
-                fprintf(InputInfo->lst_file, "  assign\t\t|\t\t");
-                break;
-            }
-            case(ARTH_OP):
-            {
-                fprintf(InputInfo->lst_file, "  arth_op\t\t|\t\t");
-                break;
-            }
-            case(LOG_OP):
-            {
-                fprintf(InputInfo->lst_file, "  log_op\t\t|\t\t");
-                break;
-            }
-            case(COND_OP):
-            {
-                fprintf(InputInfo->lst_file, "  conp_op\t\t|\t\t");
-                break;
-            }
-            case(LOOP):
-            {
-                fprintf(InputInfo->lst_file, "  loop  \t\t|\t\t");
-                break;
-            }
-            case(NUMBER):
-            {
-                fprintf(InputInfo->lst_file, "  number\t\t|\t\t");
-                break;
-            }
-            case(VAR_NAME):
-            {
-                fprintf(InputInfo->lst_file, "  var_name\t\t|\t\t");
-                break;
-            }
-            case(FNC_NAME):
-            {
-                fprintf(InputInfo->lst_file, "  fnc_name\t\t|\t\t");
-                break;
-            }
-            case(MAIN):
-            {
-                fprintf(InputInfo->lst_file, "  main  \t\t|\t\t");
-                break;
-            }
-            case(RETURN):
-            {
-                fprintf(InputInfo->lst_file, "  return\t\t|\t\t");
-                break;
-            }
-            case(RND_BRC):
-            {
-                fprintf(InputInfo->lst_file, "  rnd_brc\t\t|\t\t");
-                break;
-            }
-            case(CRL_BRC):
-            {
-                fprintf(InputInfo->lst_file, "  crl_brc\t\t|\t\t");
-                break;
-            }
-            case(COMMA):
-            {
-                fprintf(InputInfo->lst_file, "  comma\t\t\t|\t\t");
-                break;
-            }
-            case(SEMICLN):
-            {
-                fprintf(InputInfo->lst_file, "  semicln\t\t|\t\t");
-                break;
-            }
-            case(QUOTE):
-            {
-                fprintf(InputInfo->lst_file, "  quote  \t\t|\t\t");
-                break;
-            }
-            case(STRING):
-            {
-                fprintf(InputInfo->lst_file, "  string\t\t|\t\t");
-                break;
-            }
+            LST_TYPE(VAR_DECL, 0, 2);
+            LST_TYPE(FNC_DECL, 0, 2);
+            LST_TYPE(ASSIGN, 0, 2);
+            LST_TYPE(ARTH_OP, 0, 2);
+            LST_TYPE(LOG_OP, 0, 2);
+            LST_TYPE(COND_OP, 0, 2);
+            LST_TYPE(LOOP, 2, 2);
+            LST_TYPE(NUMBER, 0, 2);
+            LST_TYPE(VAR_NAME, 0, 2);
+            LST_TYPE(FNC_NAME, 0, 2);
+            LST_TYPE(MAIN, 2, 2);
+            LST_TYPE(RETURN, 0, 2);
+            LST_TYPE(RND_BRC, 0, 2);
+            LST_TYPE(CRL_BRC, 0, 2);
+            LST_TYPE(COMMA, 0, 3);
+            LST_TYPE(SEMICLN, 0, 2);
+            LST_TYPE(QUOTE, 2, 2);
+            LST_TYPE(STRING, 0, 2);
 
             default:
             {
@@ -927,14 +885,14 @@ void listing(struct InputInfo* InputInfo)
             }
         }
 
-        fprintf(InputInfo->lst_file, " %-4lu\t\t|\t\t", LINE);
+        fprintf(InputInfo->lst_file, " %-4lu\t\t|\t\t", InputInfo->tok_arr[cur_tok].line);
         fprintf(InputInfo->lst_file, "  %d\n", ERROR);
     }
 
     fclose(InputInfo->lst_file);
 }
 
-#undef LINE
+#undef LST_TYPE
 
 //=========================================================================================
 
@@ -1190,7 +1148,7 @@ void fill_func_vars(struct InputInfo* InputInfo, size_t fnc_num, size_t crl_brc_
 
 //=========================================================================================
 
-void prog_dtor(struct InputInfo* InputInfo)
+void frontend_dtor(struct InputInfo* InputInfo)
 {
     int errors_num = 0;
     for(size_t i = 0; i < InputInfo->tok_num; i++)
